@@ -5,6 +5,7 @@ declare global {
     interface Request {
       reqId?: string;
       user?: User | null;
+      idempotencyKey: string;
     }
   }
 }

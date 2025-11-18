@@ -6,6 +6,11 @@ interface AppConfig {
   BASE_API_PATH: string;
   SERVER_ORIGIN: string;
   CLIENT_ORIGIN: string;
+
+  MIDTRANS_SANDBOX_SERVER_KEY: string;
+  MIDTRANS_SANDBOX_CLIENT_KEY: string;
+  MIDTRANS_PRODUCTION_SERVER_KEY: string;
+  MIDTRANS_PRODUCTION_CLIENT_KEY: string;
 }
 
 /**
@@ -23,6 +28,12 @@ const config = (): AppConfig => ({
     `http://localhost:${getEnv("PORT", "5000")}`,
   ),
   CLIENT_ORIGIN: getEnv("CLIENT_ORIGIN", "http://localhost:3000"),
+
+  // Midtrans keys
+  MIDTRANS_SANDBOX_SERVER_KEY: getEnv("MIDTRANS_SANDBOX_SERVER_KEY"),
+  MIDTRANS_SANDBOX_CLIENT_KEY: getEnv("MIDTRANS_SANDBOX_CLIENT_KEY"),
+  MIDTRANS_PRODUCTION_SERVER_KEY: getEnv("MIDTRANS_PRODUCTION_SERVER_KEY"),
+  MIDTRANS_PRODUCTION_CLIENT_KEY: getEnv("MIDTRANS_PRODUCTION_CLIENT_KEY"),
 });
 
 const appConfig = config();

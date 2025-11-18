@@ -2,6 +2,7 @@ import { Router } from "express";
 import { addressRouter } from "@/modules/address/address.route";
 import { categoriesRouter } from "@/modules/categories/categories.route";
 import { orderRouter } from "@/modules/order/order.route";
+import { paymentRouter } from "@/modules/payment/payment.route";
 import { productRouter } from "@/modules/product/product.route";
 
 /**
@@ -49,5 +50,12 @@ v1Router.use("/orders", orderRouter);
  * dikelola di dalam router ini.
  */
 v1Router.use("/address", addressRouter);
+
+/**
+ * Route ini menangani semua endpoint terkait payment.
+ * Semua route yang berhubungan dengan data payment, managemen payment.
+ * dikelola di dalam router ini.
+ */
+v1Router.use("/payment", paymentRouter);
 
 export default v1Router;
