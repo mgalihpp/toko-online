@@ -12,54 +12,73 @@ import {
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
 import { Separator } from "@repo/ui/components/separator";
-import { AlertCircle, ArrowLeft, Info } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { clearCart as ClearCartItems } from "@/actions/cart";
+import { cancelOrder, updatePaymentStatus } from "@/actions/payment";
 import { useCartStore } from "@/features/cart/store/useCartStore";
 import { AddressSelector } from "@/features/checkout/components/address-selector";
 import { CheckoutOrderSummary } from "@/features/checkout/components/checkout-order-summary";
 import { ShippingMethodSelector } from "@/features/checkout/components/shipping-method-selector";
+import { useCreateOrder } from "@/features/checkout/mutations/useOrderMutation";
+import { SHIPPING_METHODS } from "@/features/order/constants/shipment";
 import AddressDialog from "@/features/user/components/settings/address/address-dialog";
 import { useAddresses } from "@/features/user/queries/useAddressQuery";
-import type { ShippingMethod } from "@/types/index";
+import { useServerAction } from "@/hooks/useServerAction";
+import { authClient } from "@/lib/auth-client";
+import type { Snap } from "@/types/midtrans";
 
-const SHIPPING_METHODS: ShippingMethod[] = [
-  {
-    id: "standard",
-    name: "Standard Shipping",
-    description: "Delivery to your address",
-    price: 5000,
-    estimatedDays: 5,
-  },
-  {
-    id: "express",
-    name: "Express Shipping",
-    description: "Faster delivery available",
-    price: 7500,
-    estimatedDays: 2,
-  },
-  {
-    id: "overnight",
-    name: "Overnight Shipping",
-    description: "Next business day delivery",
-    price: 10000,
-    estimatedDays: 1,
-  },
-];
+declare global {
+  interface Window {
+    snap?: Snap;
+  }
+}
+
+const scriptId = "midtrans-snap-script";
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const { data } = authClient.useSession();
   const { items, totalPrice, clearCart } = useCartStore();
   const { data: addresses = [] } = useAddresses();
+  const orderMutation = useCreateOrder();
+  const [runUpdatePaymentStatusAction] = useServerAction(updatePaymentStatus);
+  const [runCancelOrderAction] = useServerAction(cancelOrder);
+  const [runClearCartItemsAction] = useServerAction(ClearCartItems);
 
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
-    null,
+    null
   );
-  const [selectedShippingId, setSelectedShippingId] =
-    useState<string>("standard");
+  const [selectedShippingId, setSelectedShippingId] = useState<number>(1);
 
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Addresses | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || window.snap) return;
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src =
+      process.env.NODE_ENV === "production"
+        ? "https://app.midtrans.com/snap/snap.js"
+        : "https://app.sandbox.midtrans.com/snap/snap.js";
+    script.setAttribute(
+      "data-client-key",
+      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string
+    );
+    script.async = true;
+
+    document.head.appendChild(script);
+
+    return () => {
+      const existingScript = document.getElementById(scriptId);
+      existingScript?.remove();
+    };
+  }, []);
 
   // Set default address on load
   useEffect(() => {
@@ -71,9 +90,9 @@ export default function CheckoutPage() {
 
   const subtotal = totalPrice();
   const selectedShipping = SHIPPING_METHODS.find(
-    (m) => m.id === selectedShippingId,
+    (m) => m.id === selectedShippingId
   );
-  const shippingCost = selectedShipping?.price || 0;
+  const shippingCost = selectedShipping?.basePrice || 0;
   const tax = subtotal * 0.1;
   const total = subtotal + tax + shippingCost;
 
@@ -83,15 +102,72 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!window.snap) {
+      alert(
+        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman."
+      );
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      orderMutation.mutate(
+        {
+          user_id: data?.user.id as string,
+          items: items.map((it) => ({
+            variant_id: it.variant_id,
+            quantity: it.quantity,
+          })),
+          address_id: selectedAddressId,
+          shipment_method_id: selectedShippingId,
+        },
+        {
+          onSuccess: async (data) => {
+            const token = data.snap.token;
 
-      // Clear cart and redirect
-      clearCart();
+            window.snap?.pay(token, {
+              language: "id",
+              onSuccess: async (result) => {
+                console.log(result);
+                clearCart();
+                await runClearCartItemsAction({});
+                await runUpdatePaymentStatusAction({
+                  order_id: result.order_id,
+                  status: "settlement",
+                });
+                router.push(`${result.finish_redirect_url}`);
+              },
+              onPending: async (result) => {
+                console.log(result);
+                clearCart();
+                await runClearCartItemsAction({});
+                router.push(`${result.finish_redirect_url}`);
+              },
+              onError: async (result) => {
+                console.log(result);
+
+                await runUpdatePaymentStatusAction({
+                  order_id: data.order.id, //tidak menggunakan result.order_id karena terjadi error
+                  status: "failed",
+                });
+
+                // Langunsung cancel order
+                await runCancelOrderAction(data.order.id);
+
+                router.push(`${result.finish_redirect_url}`);
+              },
+              onClose: async () => {
+                // Jika user menutup snap
+                await runCancelOrderAction(data.order.id);
+                router.push(`/cart?payment_cancelled=true`);
+              },
+            });
+          },
+        }
+      );
+
       // In real app, redirect to order confirmation
-      alert("Order placed successfully!");
+      // alert("Order placed successfully!");
     } catch (error) {
       console.error("Checkout error:", error);
       alert("Failed to place order. Please try again.");
@@ -215,7 +291,7 @@ export default function CheckoutPage() {
                 tax={tax}
                 shipping={shippingCost}
                 total={total}
-                isProcessing={isProcessing}
+                isProcessing={isProcessing || orderMutation.isPending}
                 onCheckout={handleCheckout}
               />
             </div>

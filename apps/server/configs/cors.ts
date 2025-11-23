@@ -31,7 +31,8 @@ export const corsOptions = {
       "The CORS policy for this site does not allow access from the specified Origin.";
     return callback(new Error(msg), false);
   },
+
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-idempotency-key"],
   credentials: true, // Allow cookies and authorization headers
 };

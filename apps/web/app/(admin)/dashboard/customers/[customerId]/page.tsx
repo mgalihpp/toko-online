@@ -10,11 +10,16 @@ import {
 } from "@repo/ui/components/card";
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
-import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Mail, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
+import { formatCurrency } from "@/features/admin/utils";
+import { statusColors } from "@/features/order/constants/shipment";
+import { api } from "@/lib/api";
 
 // Mock customer data
 const mockCustomer = {
@@ -48,7 +53,8 @@ const mockCustomer = {
 
 export default function CustomerDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const { customerId } = useParams();
+
   const [customer, setCustomer] = useState(mockCustomer);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,8 +64,14 @@ export default function CustomerDetailPage() {
     status: customer.status,
   });
 
+  const { data: customerData } = useQuery({
+    queryKey: ["customer", customerId],
+    queryFn: () => api.customer.getById(customerId as string),
+    enabled: !!customerId,
+  });
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -74,7 +86,9 @@ export default function CustomerDetailPage() {
   return (
     <div className="p-0 md:p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">{customer.name}</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          {customerData?.name}
+        </h1>
         <p className="text-muted-foreground mt-2">
           Customer profile and order history
         </p>
@@ -86,7 +100,7 @@ export default function CustomerDetailPage() {
           {/* Customer Information */}
           <Card>
             <CardHeader className="flex items-center justify-between">
-              <CardTitle>Customer Information</CardTitle>
+              <CardTitle>Informasi Pelanggan</CardTitle>
               <Button
                 variant="outline"
                 size="sm"
@@ -153,7 +167,7 @@ export default function CustomerDetailPage() {
                     <Mail className="w-5 h-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{customer.email}</p>
+                      <p className="font-medium">{customerData?.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -183,16 +197,16 @@ export default function CustomerDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Addresses
+                Alamat
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {customer.addresses.map((addr) => (
+              {customerData?.addresses.map((addr) => (
                 <div key={addr.id} className="p-3 border rounded-md">
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">{addr.type}</Badge>
+                    {addr.is_default && <Badge variant="default">Utama</Badge>}
                   </div>
-                  <p className="text-sm">{addr.address}</p>
+                  <p className="text-sm">{addr.address_line1}</p>
                 </div>
               ))}
             </CardContent>
@@ -201,11 +215,11 @@ export default function CustomerDetailPage() {
           {/* Recent Orders */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Orders</CardTitle>
+              <CardTitle>Pesanan Terakhir</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {customer.recentOrders.map((order) => (
+                {customerData?.orders.map((order) => (
                   <div
                     key={order.id}
                     className="flex items-center justify-between p-3 border rounded-md"
@@ -213,12 +227,26 @@ export default function CustomerDetailPage() {
                     <div>
                       <p className="font-medium">{order.id}</p>
                       <p className="text-sm text-muted-foreground">
-                        {order.date}
+                        {format(
+                          order.created_at ?? new Date(),
+                          "dd MMMM yyyy HH:mm"
+                        )}{" "}
+                        WIB
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{order.amount}</p>
-                      <Badge variant="outline">{order.status}</Badge>
+                      <p className="font-medium">
+                        {formatCurrency(Number(order.total_cents))}
+                      </p>
+                      <Badge
+                        className={
+                          statusColors[
+                            order.status as keyof typeof statusColors
+                          ]
+                        }
+                      >
+                        {order.status}
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -236,16 +264,33 @@ export default function CustomerDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Total Orders</p>
-                <p className="text-2xl font-bold">{customer.orders}</p>
+                <p className="text-sm text-muted-foreground">Total Pesanan</p>
+                <p className="text-2xl font-bold">
+                  {customerData?.orders.length ?? 0}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Spent</p>
-                <p className="text-2xl font-bold">${customer.spent}</p>
+                <p className="text-sm text-muted-foreground">
+                  Total Pengeluaran
+                </p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(
+                    customerData?.orders.reduce(
+                      (acc, order) => acc + Number(order.total_cents),
+                      0
+                    ) ?? 0
+                  )}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Member Since</p>
-                <p className="font-medium">{customer.joinDate}</p>
+                <p className="text-sm text-muted-foreground">Bergabung Sejak</p>
+                <p className="font-medium">
+                  {format(
+                    customerData?.createdAt ?? new Date(),
+                    "dd MMMM yyyy HH:mm"
+                  )}{" "}
+                  WIB
+                </p>
               </div>
             </CardContent>
           </Card>

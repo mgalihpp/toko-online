@@ -9,9 +9,9 @@ export default function CustomersPage() {
     <div className="p-0 md:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Customers</h1>
+          <h1 className="text-3xl font-bold text-foreground">Pelanggan</h1>
           <p className="text-muted-foreground mt-2">
-            View and manage customer information
+            Melihat dan mengelola informasi pelanggan
           </p>
         </div>
         <Button variant="outline" className="gap-2 bg-transparent">

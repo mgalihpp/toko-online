@@ -16,9 +16,10 @@ import {
 } from "@repo/ui/components/breadcrumb";
 import { Button } from "@repo/ui/components/button";
 import { Separator } from "@repo/ui/components/separator";
-import { Check, Heart, RefreshCw, Shield, Star, Truck, X } from "lucide-react";
+import { Check, RefreshCw, Shield, Star, Truck, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { addItemToCart } from "@/actions/cart";
 import { formatCurrency } from "@/features/admin/utils";
 import { useCartStore } from "@/features/cart/store/useCartStore";
 import {
@@ -26,6 +27,8 @@ import {
   getVariantStock,
   parseOptions,
 } from "@/features/product/utils";
+import { WishlistButton } from "@/features/wishlist/components/WishlistButton";
+import { useServerAction } from "@/hooks/useServerAction";
 import type { ProductWithRelations } from "@/types/index";
 import SizeGuideDialog from "./size-guide-dialog";
 
@@ -43,22 +46,28 @@ const colorStyle = {
 };
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
-  const { addToCart } = useCartStore();
+  const { addToCart, items } = useCartStore();
   const opts_value = parseOptions(product.product_variants[0]?.option_values);
-  const [selectedSize, setSelectedSize] = useState("S");
+  const [selectedSize, setSelectedSize] = useState(opts_value.size ?? "S");
   const [selectedColor, setSelectedColor] = useState(
-    opts_value?.color ?? "default",
+    opts_value?.color ?? "default"
   );
   const [quantity, setQuantity] = useState(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
-  const { items } = useCartStore();
+  const [runAddItemToCartAction, isAddItemToCartPending] =
+    useServerAction(addItemToCart);
 
   const inWishlist = false;
 
   const selectedVariant = findVariant(product, selectedSize, selectedColor);
   const availableStock = selectedVariant ? getVariantStock(selectedVariant) : 0;
   const inStock = availableStock > 0;
-  const inCart = items.some((i) => i.id === product.id);
+  const cartItem = items.find(
+    (i) => i.id === product.id && i.variant_id === selectedVariant?.id
+  );
+  const inCart = !!cartItem;
+  const cartQuantity = cartItem?.quantity ?? 0;
+  const canAddMore = quantity < availableStock - cartQuantity;
 
   const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 
@@ -66,7 +75,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
     ...new Set(
       product.product_variants
         .map((v) => parseOptions(v.option_values)?.size)
-        .filter(Boolean),
+        .filter(Boolean)
     ),
   ].sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b));
 
@@ -74,7 +83,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
     ...new Set(
       product.product_variants
         .map((v) => parseOptions(v.option_values)?.color)
-        .filter(Boolean),
+        .filter(Boolean)
     ),
   ];
 
@@ -82,18 +91,28 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
     ? parseOptions(selectedVariant.option_values)
     : null;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    const cart_item = await runAddItemToCartAction({
+      variant_id: selectedVariant?.id as string,
+      quantity: quantity,
+    });
     addToCart({
       id: product.id,
+      cart_item_id: cart_item?.id as number,
+      variant_id: selectedVariant?.id as string,
       image: product.product_images?.[0]?.url as string,
       name: product.title,
       quantity: quantity,
-      price: Number(product.price_cents),
+      price:
+        Number(product.price_cents) +
+        Number(selectedVariant?.additional_price_cents),
       size: selectedSize,
       color: selectedColor,
+      storage:
+        selectedVariant?.inventory[0]?.stock_quantity.toString() ?? undefined,
     });
 
-    toast.success("Added to cart");
+    toast.success("Ditambahkan ke Keranjang");
   };
 
   // -------------------------
@@ -131,14 +150,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               {product.title}
             </h1>
           </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 hover:bg-secondary"
-          >
-            <Heart className={`h-5 w-5 ${inWishlist ? "fill-current" : ""}`} />
-          </Button>
+          <WishlistButton product={product} />
         </div>
 
         <div className="flex items-center gap-4">
@@ -280,16 +292,22 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           size="lg"
           className="w-full h-14 text-base font-semibold"
           onClick={handleAddToCart}
-          disabled={!inStock || inCart}
+          disabled={!inStock || !canAddMore || isAddItemToCartPending}
         >
-          Add to Cart
+          {isAddItemToCartPending
+            ? "Menambahkan..."
+            : canAddMore
+              ? inCart
+                ? "Tambah"
+                : "Tambahkan ke Keranjang"
+              : "Out of Stock"}
         </Button>
 
         <Button
           size="lg"
           variant="outline"
           className="w-full h-14 text-base font-semibold border-2 hover:bg-foreground hover:text-background"
-          disabled={!inStock || inCart}
+          disabled={!inStock || !canAddMore}
         >
           Buy Now
         </Button>
@@ -302,7 +320,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         <AccordionItem value="description">
           <AccordionTrigger>Description</AccordionTrigger>
           <AccordionContent>
-            <p className="text-base leading-relaxed text-muted-foreground">
+            <p className="text-base leading-relaxed text-muted-foreground whitespace-pre-line">
               {product.description}
             </p>
           </AccordionContent>

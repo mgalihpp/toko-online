@@ -64,8 +64,6 @@ export default function EditProductPage() {
   >([]);
   const { attachments, setAttachments, isUploading } = useProductMediaUpload();
 
-  console.log(isUploading);
-
   const form = useForm<z.infer<typeof updateProductSchema>>({
     resolver: zodResolver(updateProductSchema),
     defaultValues: {
@@ -101,15 +99,15 @@ export default function EditProductPage() {
 
       // --- DELETE old variants that no longer exist ---
       const variantsToDelete = existingVariants.filter(
-        (v) => !currentVariantIds.includes(v.id),
+        (v) => !currentVariantIds.includes(v.id)
       );
 
       await Promise.all(
         variantsToDelete.map((v) =>
           deleteProductVariantMutation.mutateAsync({
             variantId: v.id,
-          }),
-        ),
+          })
+        )
       );
 
       // --- UPDATE & CREATE ---
@@ -134,7 +132,7 @@ export default function EditProductPage() {
           } else {
             await createProductVariantsMutation.mutateAsync([variant]);
           }
-        }),
+        })
       );
 
       // filter hanya gambar baru (belum ada di database)
@@ -142,7 +140,7 @@ export default function EditProductPage() {
 
       if (newAttachments.length > 0) {
         const uniqueAttachments = Array.from(
-          new Map(newAttachments.map((a) => [a.key, a])).values(),
+          new Map(newAttachments.map((a) => [a.key, a])).values()
         );
 
         const imagesPayload = uniqueAttachments.map((a, index) => ({
@@ -216,7 +214,7 @@ export default function EditProductPage() {
           key: i.key,
           url: i.url,
           isUploading: false,
-        })),
+        }))
       );
     }
   }, [productData, form, setAttachments]);
@@ -247,7 +245,7 @@ export default function EditProductPage() {
       });
 
       const reconstructedOptions: VariantOption[] = Object.entries(
-        optionMap,
+        optionMap
       ).map(([name, values]) => ({
         name,
         values: Array.from(values),
@@ -459,7 +457,7 @@ export default function EditProductPage() {
                                 onChange={(e) => {
                                   form.setValue(
                                     "price_cents",
-                                    Number(e.target.value),
+                                    Number(e.target.value)
                                   );
                                 }}
                                 type="number"
@@ -487,7 +485,7 @@ export default function EditProductPage() {
                         placeholder="0"
                         value={variantCombinations.reduce(
                           (total, v) => total + (v.stock_quantity ?? 0),
-                          0,
+                          0
                         )}
                         readOnly
                       />

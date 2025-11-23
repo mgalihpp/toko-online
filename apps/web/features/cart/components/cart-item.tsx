@@ -1,12 +1,16 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import { Input } from "@repo/ui/components/input";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
+import {
+  deleteCartItem,
+  updateQuantity as updateCartItemQuantity,
+} from "@/actions/cart";
 import { formatCurrency } from "@/features/admin/utils";
 import { useCartStore } from "@/features/cart/store/useCartStore";
 import type { CartItem as CartItemType } from "@/features/cart/types/cart.types";
+import { useServerAction } from "@/hooks/useServerAction";
 
 interface CartItemProps {
   item: CartItemType;
@@ -14,21 +18,40 @@ interface CartItemProps {
 
 export function CartItem({ item }: CartItemProps) {
   const { updateQuantity, removeFromCart } = useCartStore();
+  const [runUpdateCartItemQuantityAction] = useServerAction(
+    updateCartItemQuantity
+  );
+  const [runDeleteCartItemAction] = useServerAction(deleteCartItem);
 
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    if (value > 0) {
-      updateQuantity(item.id, value);
+  const incrementQuantity = async () => {
+    const newQty = item.quantity + 1;
+
+    updateQuantity(item.cart_item_id, item.variant_id, newQty);
+
+    await runUpdateCartItemQuantityAction({
+      cart_item_id: item.cart_item_id,
+      quantity: newQty,
+    });
+  };
+
+  const decrementQuantity = async () => {
+    const newQty = item.quantity - 1;
+
+    if (newQty > 0) {
+      updateQuantity(item.cart_item_id, item.variant_id, newQty);
+    } else {
+      removeFromCart(item.cart_item_id, item.variant_id);
     }
-  };
 
-  const incrementQuantity = () => {
-    updateQuantity(item.id, item.quantity + 1);
-  };
-
-  const decrementQuantity = () => {
-    if (item.quantity > 1) {
-      updateQuantity(item.id, item.quantity - 1);
+    if (newQty <= 0) {
+      await runDeleteCartItemAction({
+        cart_item_id: item.cart_item_id,
+      });
+    } else {
+      await runUpdateCartItemQuantityAction({
+        cart_item_id: item.cart_item_id,
+        quantity: newQty,
+      });
     }
   };
 
@@ -52,9 +75,9 @@ export function CartItem({ item }: CartItemProps) {
           </h3>
 
           <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-            {item.color && <span>{item.color}</span>}
-            {item.size && <span>{item.size}</span>}
-            {item.storage && <span>{item.storage}</span>}
+            {item.color && <span>Color: {item.color}</span>}
+            {item.size && <span>Size: {item.size}</span>}
+            {item.storage && <span>Stock: {item.storage}</span>}
           </div>
         </div>
 
@@ -69,7 +92,11 @@ export function CartItem({ item }: CartItemProps) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => removeFromCart(item.id)}
+          onClick={async () => {
+            removeFromCart(item.cart_item_id, item.variant_id);
+
+            await runDeleteCartItemAction({ cart_item_id: item.cart_item_id });
+          }}
           className="text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="w-4 h-4" />
