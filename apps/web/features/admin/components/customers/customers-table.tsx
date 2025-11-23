@@ -3,11 +3,17 @@
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Card, CardContent, CardHeader } from "@repo/ui/components/card";
+import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Edit2, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DataTable } from "@/features/admin/components/data-table";
+import { api } from "@/lib/api";
+import type { UserWithRelations } from "@/types/index";
+import { formatCurrency } from "../../utils";
+import { DataTableSkeleton } from "../data-table-skeleton";
+import { ErrorAlert } from "../error-alert";
 
 interface Customer {
   id: number;
@@ -68,9 +74,17 @@ const customers: Customer[] = [
 ];
 
 export function CustomersTable() {
-  const [customers_list, setCustomers] = useState<Customer[]>(customers);
+  const {
+    data: customerData,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["customers"],
+    queryFn: api.customer.getAll,
+  });
 
-  const columns: ColumnDef<Customer>[] = [
+  const columns: ColumnDef<UserWithRelations>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -88,39 +102,52 @@ export function CustomersTable() {
         );
       },
     },
-    {
-      accessorKey: "phone",
-      header: "Phone",
-      cell: ({ row }) => {
-        const phone = row.getValue("phone") as string;
-        return (
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-muted-foreground" />
-            {phone}
-          </div>
-        );
-      },
-    },
+    // {
+    //   accessorKey: "phone",
+    //   header: "Phone",
+    //   cell: ({ row }) => {
+    //     const phone = row.getValue("phone") as string;
+    //     return (
+    //       <div className="flex items-center gap-2">
+    //         <Phone className="w-4 h-4 text-muted-foreground" />
+    //         {phone}
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       accessorKey: "orders",
       header: "Orders",
+      cell: ({ row }) => {
+        const total_orders = row.original.orders.length ?? 0;
+
+        return total_orders;
+      },
     },
     {
       accessorKey: "spent",
       header: "Total Spent",
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
       cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <Badge variant={status === "Active" ? "default" : "secondary"}>
-            {status}
-          </Badge>
+        const total_spent = row.original.orders.reduce(
+          (acc, order) => acc + Number(order.total_cents),
+          0
         );
+
+        return <span>{formatCurrency(total_spent)}</span>;
       },
     },
+    // {
+    //   accessorKey: "status",
+    //   header: "Status",
+    //   cell: ({ row }) => {
+    //     const status = row.getValue("status") as string;
+    //     return (
+    //       <Badge variant={status === "Active" ? "default" : "secondary"}>
+    //         {status}
+    //       </Badge>
+    //     );
+    //   },
+    // },
     {
       id: "actions",
       header: "Actions",
@@ -143,12 +170,21 @@ export function CustomersTable() {
         <h3 className="text-lg font-semibold">Customers</h3>
       </CardHeader>
       <CardContent>
-        <DataTable
-          columns={columns}
-          data={customers_list}
-          searchPlaceholder="Search by name or email..."
-          searchKey="name"
-        />
+        {isPending ? (
+          <DataTableSkeleton />
+        ) : isError ? (
+          <ErrorAlert
+            description="Gagal mendapatkan data pelanggan"
+            action={() => refetch()}
+          />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={customerData}
+            searchPlaceholder="Search by name or email.."
+            searchKey={["name", "email"]}
+          />
+        )}
       </CardContent>
     </Card>
   );

@@ -16,7 +16,8 @@ import { AlertCircle, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { cancelPayment, updatePaymentStatus } from "@/actions/payment";
+import { clearCart as ClearCartItems } from "@/actions/cart";
+import { cancelOrder, updatePaymentStatus } from "@/actions/payment";
 import { useCartStore } from "@/features/cart/store/useCartStore";
 import { AddressSelector } from "@/features/checkout/components/address-selector";
 import { CheckoutOrderSummary } from "@/features/checkout/components/checkout-order-summary";
@@ -44,10 +45,11 @@ export default function CheckoutPage() {
   const { data: addresses = [] } = useAddresses();
   const orderMutation = useCreateOrder();
   const [runUpdatePaymentStatusAction] = useServerAction(updatePaymentStatus);
-  const [runCancelPaymentAction] = useServerAction(cancelPayment);
+  const [runCancelOrderAction] = useServerAction(cancelOrder);
+  const [runClearCartItemsAction] = useServerAction(ClearCartItems);
 
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
-    null,
+    null
   );
   const [selectedShippingId, setSelectedShippingId] = useState<number>(1);
 
@@ -66,7 +68,7 @@ export default function CheckoutPage() {
         : "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute(
       "data-client-key",
-      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string,
+      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string
     );
     script.async = true;
 
@@ -88,7 +90,7 @@ export default function CheckoutPage() {
 
   const subtotal = totalPrice();
   const selectedShipping = SHIPPING_METHODS.find(
-    (m) => m.id === selectedShippingId,
+    (m) => m.id === selectedShippingId
   );
   const shippingCost = selectedShipping?.basePrice || 0;
   const tax = subtotal * 0.1;
@@ -102,7 +104,7 @@ export default function CheckoutPage() {
 
     if (!window.snap) {
       alert(
-        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman.",
+        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman."
       );
       return;
     }
@@ -125,36 +127,43 @@ export default function CheckoutPage() {
 
             window.snap?.pay(token, {
               language: "id",
-              onSuccess: (result) => {
+              onSuccess: async (result) => {
+                console.log(result);
                 clearCart();
-                runUpdatePaymentStatusAction({
+                await runClearCartItemsAction({});
+                await runUpdatePaymentStatusAction({
                   order_id: result.order_id,
                   status: "settlement",
                 });
-                console.log(result);
                 router.push(`${result.finish_redirect_url}`);
               },
-              onPending: (result) => {
+              onPending: async (result) => {
+                console.log(result);
                 clearCart();
-                console.log(result);
+                await runClearCartItemsAction({});
                 router.push(`${result.finish_redirect_url}`);
               },
-              onError: (result) => {
+              onError: async (result) => {
                 console.log(result);
-                runUpdatePaymentStatusAction({
-                  order_id: result.order_id,
+
+                await runUpdatePaymentStatusAction({
+                  order_id: data.order.id, //tidak menggunakan result.order_id karena terjadi error
                   status: "failed",
                 });
+
+                // Langunsung cancel order
+                await runCancelOrderAction(data.order.id);
+
                 router.push(`${result.finish_redirect_url}`);
               },
-              onClose: () => {
+              onClose: async () => {
                 // Jika user menutup snap
-                runCancelPaymentAction(data.order.id);
+                await runCancelOrderAction(data.order.id);
                 router.push(`/cart?payment_cancelled=true`);
               },
             });
           },
-        },
+        }
       );
 
       // In real app, redirect to order confirmation

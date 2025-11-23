@@ -103,3 +103,10 @@ export type FilterProps = {
   page: number;
   pageSize: number;
 };
+
+export type UserWithRelations = Prisma.UserGetPayload<{
+  include: {
+    orders: true;
+    addresses: true;
+  };
+}>;

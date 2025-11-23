@@ -2,7 +2,21 @@
 
 import { db } from "@repo/db";
 
-export const cancelPayment = async (order_id: string) => {
+/**
+ * Membatalkan order beserta pembayarannya.
+ * Hanya boleh dilakukan jika order belum berstatus "settlement".
+ * Akan:
+ *   - Mengembalikan reserved stock ke inventory
+ *   - Mengubah status order → cancelled
+ *   - Mengubah status payment → cancelled
+ *
+ * @param order_id - ID order yang ingin dibatalkan
+ * @returns { order: Order, payment: Prisma.BatchPayload }
+ * @throws Error jika order tidak ditemukan / sudah dibayar
+ */
+export async function cancelOrder(order_id: string) {
+  if (!order_id) throw new Error("order_id is required");
+
   try {
     const order = await db.orders.findFirst({
       where: { id: order_id },
@@ -10,9 +24,7 @@ export const cancelPayment = async (order_id: string) => {
         order_items: {
           include: {
             variant: {
-              include: {
-                inventory: true,
-              },
+              include: { inventory: true },
             },
           },
         },
@@ -20,18 +32,13 @@ export const cancelPayment = async (order_id: string) => {
       },
     });
 
-    if (!order) {
-      throw new Error("Order not found");
-    }
-
-    // Kalo order udah paid/settlement, jangan sentuh
+    if (!order) throw new Error("Order not found");
     if (order.status === "settlement") {
-      throw new Error("Order is already paid and cannot be cancelled.");
+      throw new Error("Cannot cancel order that is already paid (settlement)");
     }
 
-    // Jalankan semuanya dalam transaksi
     const result = await db.$transaction(async (tx) => {
-      // 1. Balikin reserved stock
+      // 1. Kembalikan reserved stock
       for (const item of order.order_items) {
         await tx.inventory.updateMany({
           where: { variant_id: item.variant_id as string },
@@ -43,7 +50,7 @@ export const cancelPayment = async (order_id: string) => {
         });
       }
 
-      // 2. Update order → cancelled
+      // 2. Update status order
       const updatedOrder = await tx.orders.update({
         where: { id: order.id },
         data: {
@@ -52,8 +59,8 @@ export const cancelPayment = async (order_id: string) => {
         },
       });
 
-      // 3. Update payment status → cancelled
-      const updatedPayment = await tx.payments.updateMany({
+      // 3. Update semua payment terkait (biasanya cuma 1)
+      const updatedPayments = await tx.payments.updateMany({
         where: { order_id: order.id },
         data: {
           status: "cancelled",
@@ -63,47 +70,68 @@ export const cancelPayment = async (order_id: string) => {
 
       return {
         order: updatedOrder,
-        payment: updatedPayment,
+        payments: updatedPayments, // { count: number }
       };
     });
 
     return result;
-  } catch (err) {
-    console.error("Cancel payment error:", err);
-    throw err;
+  } catch (error) {
+    console.error("[cancelOrder] Error:", error);
   }
-};
+}
 
-export const updatePaymentStatus = async ({
+/**
+ * Update status pembayaran (dipanggil dari webhook payment gateway).
+ * Hanya mengubah kolom payment, tidak menyentuh order status atau stock.
+ *
+ * @param params.order_id - ID order
+ * @param params.status - Status baru (contoh: "pending" | "capture" | "settlement" | "deny" | "cancel" | "expire")
+ * @returns Payment record yang sudah diupdate
+ */
+export async function updatePaymentStatus({
   order_id,
   status,
 }: {
   order_id: string;
   status: string;
-}) => {
+}) {
+  if (!order_id || !status) {
+    throw new Error("order_id and status are required");
+  }
+
+  // Validasi status yang diperbolehkan (opsional, sesuaikan dengan gateway kamu)
+  const allowedStatuses = [
+    "pending",
+    "capture",
+    "settlement",
+    "deny",
+    "cancel",
+    "expire",
+    "refund",
+    "failed",
+  ];
+  if (!allowedStatuses.includes(status)) {
+    throw new Error(`Invalid payment status: ${status}`);
+  }
+
   try {
-    const order = await db.orders.findFirst({
-      where: {
-        id: order_id,
-      },
+    // Pastikan order ada
+    const order = await db.orders.findUnique({
+      where: { id: order_id },
     });
 
-    if (!order?.id) {
-      throw new Error("Order not found");
-    }
+    if (!order) throw new Error("Order not found");
 
     const payment = await db.payments.update({
-      where: {
-        order_id: order.id,
-      },
+      where: { order_id }, // asumsi constraint unique di order_id
       data: {
         status,
-        paid_at: new Date(),
+        paid_at: ["capture", "settlement"].includes(status) ? new Date() : null,
       },
     });
 
     return payment;
   } catch (error) {
-    console.error(error);
+    console.error("[updatePaymentStatus] Error:", error);
   }
-};
+}

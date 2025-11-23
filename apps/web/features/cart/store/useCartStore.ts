@@ -3,6 +3,7 @@ import type { CartState } from "@/features/cart/types/cart.types";
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
+  loading: true,
 
   addToCart: (newItem) =>
     set((state) => {
@@ -20,7 +21,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       }
 
       const existingIndex = state.items.findIndex(
-        (i) => i.id === newItem.id && i.variant_id === newItem.variant_id,
+        (i) => i.id === newItem.id && i.variant_id === newItem.variant_id
       );
 
       if (existingIndex !== -1) {
@@ -29,7 +30,7 @@ export const useCartStore = create<CartState>((set, get) => ({
           items: state.items.map((item, idx) =>
             idx === existingIndex
               ? { ...item, quantity: item.quantity + newItem.quantity }
-              : item,
+              : item
           ),
         };
       }
@@ -40,28 +41,35 @@ export const useCartStore = create<CartState>((set, get) => ({
       };
     }),
 
-  removeFromCart: (id: string, variant_id: string) =>
+  removeFromCart: (cart_item_id, variant_id) =>
     set((state) => ({
       items: state.items.filter(
-        (i) => !(i.id === id && i.variant_id === variant_id),
+        (i) => !(i.cart_item_id === cart_item_id && i.variant_id === variant_id)
       ),
     })),
 
-  updateQuantity: (id: string, variant_id: string, quantity: number) =>
+  updateQuantity: (cart_item_id, variant_id, quantity) =>
     set((state) => {
       if (quantity <= 0) {
         return {
           items: state.items.filter(
-            (i) => !(i.id === id && i.variant_id === variant_id),
+            (i) =>
+              !(i.cart_item_id === cart_item_id && i.variant_id === variant_id)
           ),
         };
       }
       return {
         items: state.items.map((i) =>
-          i.id === id && i.variant_id === variant_id ? { ...i, quantity } : i,
+          i.cart_item_id === cart_item_id && i.variant_id === variant_id
+            ? { ...i, quantity }
+            : i
         ),
       };
     }),
+  setLoading: (v) =>
+    set(() => ({
+      loading: v,
+    })),
 
   clearCart: () => set({ items: [] }),
 

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin } from "@/middleware/admin";
 import { CategoriesController } from "./categories.controller";
 
 const categoriesRouter = Router();
@@ -110,7 +111,7 @@ categoriesRouter.get("/", categoriesController.getAll);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-categoriesRouter.post("/", categoriesController.create);
+categoriesRouter.post("/", requireAdmin, categoriesController.create);
 
 /**
  * @swagger
@@ -168,7 +169,7 @@ categoriesRouter.post("/", categoriesController.create);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-categoriesRouter.put("/:id", categoriesController.update);
+categoriesRouter.put("/:id", requireAdmin, categoriesController.update);
 
 /**
  * @swagger
@@ -210,6 +211,6 @@ categoriesRouter.put("/:id", categoriesController.update);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-categoriesRouter.delete("/:id", categoriesController.delete);
+categoriesRouter.delete("/:id", requireAdmin, categoriesController.delete);
 
 export { categoriesRouter };

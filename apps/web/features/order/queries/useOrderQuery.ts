@@ -10,12 +10,43 @@ export const useOrder = (orderId: string) => {
   });
 };
 
-export const usePaymentStatus = (orderId: string) => {
-  return useQuery({
+export const useOrderWithPayment = (orderId: string) => {
+  const paymentQuery = useQuery({
     queryKey: ["payment", orderId],
     queryFn: () => api.payment.getStatus(orderId),
     enabled: !!orderId,
+    staleTime: 1000 * 10, // 10 detik, karena status pembayaran bisa berubah
   });
+
+  const orderQuery = useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => api.order.getById(orderId),
+    enabled: !!orderId && !!paymentQuery.isFetched, // kunci di sini
+    staleTime: 1000 * 30,
+  });
+
+  return {
+    // Payment status (prioritas utama)
+    paymentData: paymentQuery.data,
+    isPaymentLoading: paymentQuery.isPending,
+    isPaymentError: paymentQuery.isError,
+
+    // Order detail
+    orderData: orderQuery.data,
+    isOrderLoading: orderQuery.isPending,
+    isOrderError: orderQuery.isError,
+
+    // Kombinasi loading state
+    isLoading: paymentQuery.isPending || orderQuery.isPending,
+    isError: paymentQuery.isError || orderQuery.isError,
+    isSuccess: paymentQuery.isSuccess && orderQuery.isSuccess,
+
+    // Refetch keduanya jika perlu
+    refetch: () => {
+      paymentQuery.refetch();
+      orderQuery.refetch();
+    },
+  };
 };
 
 export const useUserOrders = (userId?: string) => {

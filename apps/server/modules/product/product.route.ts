@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin } from "@/middleware/admin";
 import { ProductVariantsController } from "../variant/variant.controller";
 import { ProductController } from "./product.controller";
 
@@ -93,7 +94,7 @@ productRouter.get("/:id", productController.getById);
  *             schema:
  *               $ref: '#/components/schemas/Product'
  */
-productRouter.post("/", productController.create);
+productRouter.post("/", requireAdmin, productController.create);
 
 /**
  * @swagger
@@ -119,7 +120,7 @@ productRouter.post("/", productController.create);
  *       404:
  *         description: Product not found
  */
-productRouter.put("/:id", productController.update);
+productRouter.put("/:id", requireAdmin, productController.update);
 
 /**
  * @swagger
@@ -135,7 +136,7 @@ productRouter.put("/:id", productController.update);
  *       404:
  *         description: Product not found
  */
-productRouter.delete("/:id", productController.delete);
+productRouter.delete("/:id", requireAdmin, productController.delete);
 
 /* ---------------------- PRODUCT IMAGES ---------------------- */
 /**
@@ -156,7 +157,7 @@ productRouter.delete("/:id", productController.delete);
  *       201:
  *         description: Images uploaded
  */
-productRouter.post("/images", productController.createImages);
+productRouter.post("/images", requireAdmin, productController.createImages);
 
 /**
  * @swagger
@@ -170,7 +171,11 @@ productRouter.post("/images", productController.createImages);
  *       204:
  *         description: Image deleted successfully
  */
-productRouter.delete("/images/:imageId", productController.deleteImage);
+productRouter.delete(
+  "/images/:imageId",
+  requireAdmin,
+  productController.deleteImage
+);
 
 /* ---------------------- PRODUCT VARIANTS ---------------------- */
 
@@ -194,7 +199,7 @@ productRouter.delete("/images/:imageId", productController.deleteImage);
  *             schema:
  *               $ref: '#/components/schemas/ProductVariant'
  */
-productRouter.post("/variant", productVariantsController.create);
+productRouter.post("/variant", requireAdmin, productVariantsController.create);
 
 /**
  * @swagger
@@ -220,7 +225,11 @@ productRouter.post("/variant", productVariantsController.create);
  *       404:
  *         description: Variant not found
  */
-productRouter.put("/variant/:variantId", productVariantsController.update);
+productRouter.put(
+  "/variant/:variantId",
+  requireAdmin,
+  productVariantsController.update
+);
 
 /**
  * @swagger
@@ -234,6 +243,10 @@ productRouter.put("/variant/:variantId", productVariantsController.update);
  *       204:
  *         description: Variant deleted successfully
  */
-productRouter.delete("/variant/:variantId", productVariantsController.delete);
+productRouter.delete(
+  "/variant/:variantId",
+  requireAdmin,
+  productVariantsController.delete
+);
 
 export { productRouter };

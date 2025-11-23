@@ -130,7 +130,7 @@ export function CheckoutOrderSummary({
         className="w-full mb-3"
         size="lg"
       >
-        {isProcessing ? "Processing..." : "Place Order"}
+        {isProcessing ? "Memproses..." : "Tempatkan Pesanan"}
       </Button>
     </Card>
   );

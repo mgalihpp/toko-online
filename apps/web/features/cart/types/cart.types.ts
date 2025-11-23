@@ -3,6 +3,7 @@
 export interface CartItem {
   id: string;
   variant_id: string;
+  cart_item_id: number;
   name: string;
   price: number;
   image: string;
@@ -14,10 +15,12 @@ export interface CartItem {
 
 export interface CartState {
   items: CartItem[];
+  loading: boolean;
 
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string, variant_id: string) => void;
-  updateQuantity: (id: string, variant_id: string, quantity: number) => void;
+  removeFromCart: (id: number, variant_id: string) => void;
+  updateQuantity: (id: number, variant_id: string, quantity: number) => void;
+  setLoading: (v: boolean) => void;
 
   clearCart: () => void;
   totalItems: () => number;

@@ -2,6 +2,14 @@
 
 import { db } from "@repo/db";
 
+/**
+ * Mendapatkan product berdasarkan slug.
+ * Akan:
+ *   - Mengembalikan data produk
+ * @param slug - slug dari product url
+ * @returns { product: ProductWithRelations }
+ * @throws Error jika produk tidak ditemukan
+ */
 export const getProductBySlug = async (slug: string) => {
   try {
     const product = await db.product.findFirst({
@@ -22,6 +30,6 @@ export const getProductBySlug = async (slug: string) => {
 
     return product;
   } catch (error) {
-    console.error(error);
+    console.error("[getProductBySlug] Error:", error);
   }
 };

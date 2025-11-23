@@ -40,7 +40,7 @@ const RelatedProducts = ({ productId }: RelatedProductsProps) => {
     //     image: product.image,
     //     inStock: true,
     //   });
-    toast.success("Added to wishlist");
+    // toast.success("Added to wishlist");
     // }
   };
 

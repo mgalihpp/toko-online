@@ -58,8 +58,6 @@ export const ProductImageUpload = () => {
     startUpload(files);
   }
 
-  console.log(attachments);
-
   return (
     <Card className="mb-8">
       <CardHeader>

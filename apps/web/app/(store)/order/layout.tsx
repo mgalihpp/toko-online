@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 
 export default function OrderLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <Suspense>{children}</Suspense>;
 }

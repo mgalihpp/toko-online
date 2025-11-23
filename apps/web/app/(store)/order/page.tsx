@@ -2,6 +2,7 @@
 
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
+import { Skeleton } from "@repo/ui/components/skeleton";
 import { format } from "date-fns";
 import {
   AlertCircle,
@@ -16,14 +17,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { updatePaymentStatus } from "@/actions/payment";
+import { cancelOrder, updatePaymentStatus } from "@/actions/payment";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
 import { formatCurrency } from "@/features/admin/utils";
-import { useCartStore } from "@/features/cart/store/useCartStore";
 import { statusColors } from "@/features/order/constants/shipment";
-import {
-  useOrder,
-  usePaymentStatus,
-} from "@/features/order/queries/useOrderQuery";
+import { useOrderWithPayment } from "@/features/order/queries/useOrderQuery";
 import { mapGatewayResponseToPaymentDetail } from "@/features/order/utils/mapGateway";
 import { useServerAction } from "@/hooks/useServerAction";
 import type { PaymentDetail, Snap } from "@/types/midtrans";
@@ -39,57 +37,21 @@ const scriptId = "midtrans-snap-script";
 const OrderDetails = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("order_id");
-  const paymentStatus = searchParams.get("transaction_status") || "settlement";
+  const order_id = searchParams.get("order_id");
+  const status_code = searchParams.get("status_code");
+  const transaction_status =
+    searchParams.get("transaction_status") || "settlement";
   const [runUpdatePaymentStatusAction] = useServerAction(updatePaymentStatus);
+  const [runCancelOrderAction] = useServerAction(cancelOrder);
 
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail | null>(
-    null,
+    null
   );
 
-  const { data: orderData, isPending, isError } = useOrder(orderId as string);
-  const { clearCart } = useCartStore();
-  const { data: paymentData } = usePaymentStatus(orderId as string);
+  const { orderData, paymentData, isLoading, isError, isPaymentError } =
+    useOrderWithPayment(order_id as string);
 
   const shippingStatus = orderData?.shipments?.[0]?.status ?? "";
-
-  // const mockOrder = {
-  //   id: orderId,
-  //   date: new Date().toLocaleDateString("id-ID"),
-  //   status:
-  //     paymentStatus === "settlement"
-  //       ? "Sedang Dikemas"
-  //       : paymentStatus === "pending"
-  //         ? "Menunggu Pembayaran"
-  //         : "Pembayaran Gagal",
-  //   paymentStatus: paymentStatus,
-  //   trackingNumber: paymentStatus === "settlement" ? "JNE123456789012" : "-",
-  //   estimatedDelivery:
-  //     paymentStatus === "settlement" ? "18 - 20 Jan 2025" : "-",
-  //   items: [
-  //     {
-  //       id: 1,
-  //       name: "Premium Smartphone Pro Max",
-  //       price: 12999000,
-  //       quantity: 1,
-  //       image: "",
-  //     },
-  //   ],
-  //   shipping: {
-  //     name: "John Doe",
-  //     address: "Jl. Contoh No. 123",
-  //     city: "Jakarta",
-  //     postalCode: "12345",
-  //     phone: "081234567890",
-  //   },
-  //   payment: {
-  //     method: "Transfer Bank",
-  //     bank: "BCA",
-  //     accountNumber: "1234567890",
-  //     expiryTime: paymentStatus === "pending" ? "23:59:59" : null,
-  //   },
-  //   total: 12999000,
-  // };
 
   const getStatusConfig = () => {
     switch (orderData?.payments[0]?.status) {
@@ -131,14 +93,26 @@ const OrderDetails = () => {
 
   const statusConfig = getStatusConfig();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (paymentStatus === "pending" && paymentData) {
+    if (paymentData?.transaction_status === "cancel") {
+      runUpdatePaymentStatusAction({
+        order_id: order_id as string,
+        status: "cancel",
+      });
+
+      runCancelOrderAction(order_id as string);
+    }
+  }, [order_id, paymentData?.transaction_status]);
+
+  useEffect(() => {
+    if (transaction_status === "pending" && paymentData) {
       setPaymentDetail(mapGatewayResponseToPaymentDetail(paymentData));
     }
-    if (paymentStatus === "settlement" && paymentData) {
+    if (transaction_status === "settlement" && paymentData) {
       setPaymentDetail(mapGatewayResponseToPaymentDetail(paymentData));
     }
-  }, [paymentData, paymentStatus]);
+  }, [transaction_status, paymentData]);
 
   useEffect(() => {
     if (typeof window === "undefined" || window.snap) return;
@@ -151,7 +125,7 @@ const OrderDetails = () => {
         : "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute(
       "data-client-key",
-      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string,
+      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string
     );
     script.async = true;
 
@@ -171,38 +145,36 @@ const OrderDetails = () => {
 
     if (!window.snap) {
       alert(
-        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman.",
+        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman."
       );
       return;
     }
 
     window.snap?.pay(orderData?.payments[0]?.provider_payment_id, {
       language: "id",
-      onSuccess: (result) => {
-        clearCart();
-        runUpdatePaymentStatusAction({
+      onSuccess: async (result) => {
+        console.log(result);
+        await runUpdatePaymentStatusAction({
           order_id: result.order_id,
           status: "settlement",
         });
+        router.push(`${result.finish_redirect_url}`);
+      },
+      onPending: async (result) => {
         console.log(result);
         router.push(`${result.finish_redirect_url}`);
       },
-      onPending: (result) => {
-        clearCart();
+      onError: async (result) => {
         console.log(result);
-        router.push(`${result.finish_redirect_url}`);
-      },
-      onError: (result) => {
-        console.log(result);
-        runUpdatePaymentStatusAction({
-          order_id: result.order_id,
-          status: "failed",
-        });
+
+        // Langunsung cancel order
+        await runCancelOrderAction(order_id as string);
+
         router.push(`${result.finish_redirect_url}`);
       },
       onClose: () => {
-        clearCart();
-        router.push(`/order?order_id=${orderId}`);
+        // clearCart();
+        router.push(`/order?order_id=${order_id}`);
       },
     });
   };
@@ -246,7 +218,7 @@ const OrderDetails = () => {
       icon: Package,
       label: "Sedang Diproses",
       active: ["processing", "shipped", "in_transit", "delivered"].includes(
-        shippingStatus,
+        shippingStatus
       ),
       date: getStepDate(1),
     },
@@ -263,6 +235,20 @@ const OrderDetails = () => {
       date: getStepDate(3),
     },
   ];
+
+  if (isLoading) {
+    return <OrderSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorAlert
+        title="Terjadi Kesalahan"
+        description="Gagal memuat detail pesanan. Silakan coba lagi."
+        action={() => window.location.reload()}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -520,12 +506,12 @@ const OrderDetails = () => {
 
               <div className="border border-border p-8">
                 <h2 className="text-2xl font-bold mb-6">
-                  {paymentStatus === "pending"
+                  {transaction_status === "pending"
                     ? "Informasi Pembayaran"
                     : "Informasi Pengiriman"}
                 </h2>
                 <div className="space-y-4">
-                  {paymentStatus === "pending" || !paymentData ? (
+                  {transaction_status === "pending" || !paymentData ? (
                     <>
                       <div>
                         <p className="text-sm text-muted-foreground">
@@ -567,7 +553,7 @@ const OrderDetails = () => {
                         Bayar Sekarang
                       </Button>
                     </>
-                  ) : paymentStatus === "failed" ? (
+                  ) : transaction_status === "failed" ? (
                     <>
                       <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
                         <p className="text-sm text-muted-foreground mb-2">
@@ -613,7 +599,7 @@ const OrderDetails = () => {
                           {orderData?.shipments?.[0]?.delivered_at
                             ? `${format(
                                 new Date(orderData.shipments[0].delivered_at),
-                                "dd MMMM yyyy HH:mm",
+                                "dd MMMM yyyy HH:mm"
                               )} WIB`
                             : "-"}
                         </p>
@@ -678,6 +664,103 @@ function VariantInfo({ variant }: VariantInfoProps) {
         <p className="text-sm text-muted-foreground">Ukuran: {opts.size}</p>
       )}
     </>
+  );
+}
+
+function OrderSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 lg:px-8 py-12">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <Skeleton className="w-16 h-16 rounded-full mx-auto" />
+            <Skeleton className="h-10 w-64 mx-auto" />
+            <Skeleton className="h-6 w-40 mx-auto" />
+          </div>
+
+          {/* Timeline */}
+          <div className="border border-border p-8">
+            <Skeleton className="h-8 w-48 mb-6" />
+            <div className="hidden md:flex justify-between">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex flex-col items-center flex-1">
+                  <Skeleton className="w-12 h-12 rounded-full mb-3" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24 mt-2" />
+                </div>
+              ))}
+            </div>
+            <div className="md:hidden space-y-6">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Detail Pesanan */}
+          <div className="border border-border p-8">
+            <div className="flex justify-between items-center mb-6">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+            <div className="space-y-6">
+              {[0, 1].map((i) => (
+                <div key={i} className="flex gap-6 pb-6 border-b">
+                  <Skeleton className="w-24 h-24 rounded-md flex-shrink-0" />
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-6 w-64" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 space-y-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-40" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Alamat + Info Pembayaran/Pengiriman */}
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="border border-border p-8 space-y-4">
+              <Skeleton className="h-8 w-48 mb-4" />
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-4 w-64" />
+              ))}
+            </div>
+            <div className="border border-border p-8 space-y-4">
+              <Skeleton className="h-8 w-56 mb-4" />
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-6 w-48" />
+                </div>
+              ))}
+              <Skeleton className="h-12 w-full mt-6" />
+            </div>
+          </div>
+
+          {/* Tombol */}
+          <div className="flex max-sm:flex-col gap-4">
+            <Skeleton className="h-12 flex-1" />
+            <Skeleton className="h-12 flex-1" />
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
 

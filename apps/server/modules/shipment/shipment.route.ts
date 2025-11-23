@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticateMiddleware } from "@/middleware/authenticated";
+import { requireAdmin } from "@/middleware/admin";
 import { ShipmentController } from "./shipment.controller";
 
 const shipmentRouter = Router();
@@ -11,7 +11,7 @@ const shipmentController = new ShipmentController();
  *   description: Shipment management endpoints
  */
 
-shipmentRouter.post("/", authenticateMiddleware, shipmentController.create);
-shipmentRouter.put("/:id", authenticateMiddleware, shipmentController.update);
+shipmentRouter.post("/", requireAdmin, shipmentController.create);
+shipmentRouter.put("/:id", requireAdmin, shipmentController.update);
 
 export { shipmentRouter };
