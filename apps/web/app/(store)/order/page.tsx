@@ -105,6 +105,16 @@ const OrderDetails = () => {
     }
   }, [order_id, paymentData?.transaction_status]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (paymentData?.transaction_status === "settlement") {
+      runUpdatePaymentStatusAction({
+        order_id: order_id as string,
+        status: "settlement",
+      });
+    }
+  }, [order_id, paymentData?.transaction_status]);
+
   useEffect(() => {
     if (transaction_status === "pending" && paymentData) {
       setPaymentDetail(mapGatewayResponseToPaymentDetail(paymentData));
