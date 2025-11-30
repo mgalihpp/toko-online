@@ -88,7 +88,7 @@ export function AddressSelector({
                         )}
                         {address.is_default && (
                           <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded flex-shrink-0">
-                            Default
+                            Alamat Utama
                           </span>
                         )}
                       </div>

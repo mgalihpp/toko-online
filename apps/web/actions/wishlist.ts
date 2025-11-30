@@ -56,7 +56,7 @@ export async function getOrCreateWishlist() {
     return wishlist;
   } catch (error) {
     console.error("getOrCreateWishlist error:", error);
-    throw error;
+    // throw error;
   }
 }
 
@@ -90,7 +90,7 @@ export async function addItemToWishlist({ variant_id }: AddToWishlistParams) {
     });
   } catch (error) {
     console.error("addToWishlist error:", error);
-    throw error;
+    // throw error;
   }
 }
 

@@ -60,7 +60,7 @@ export async function getOrCreateCart() {
     return cart;
   } catch (error) {
     console.error("getOrCreateCart error:", error);
-    throw error;
+    // throw error;
   }
 }
 
@@ -106,7 +106,7 @@ export async function addItemToCart({ variant_id, quantity }: AddToCartParams) {
     });
   } catch (error) {
     console.error("addToCart error:", error);
-    throw error;
+    // throw error;
   }
 }
 

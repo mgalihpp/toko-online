@@ -32,7 +32,20 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
       };
     };
     product_images: true;
-    reviews: true;
+    reviews: {
+      include: {
+        user: {
+          select: {
+            id: true;
+            name: true;
+            image: true;
+          };
+        };
+      };
+      orderBy: {
+        created_at: "desc";
+      };
+    };
   };
 }>;
 
@@ -54,6 +67,15 @@ export type OrderWithFullRelations = Prisma.OrdersGetPayload<{
             product: {
               include: {
                 product_images: true;
+                reviews: {
+                  select: {
+                    id: true;
+                    user_id: true;
+                    rating: true;
+                    body: true;
+                    created_at: true;
+                  };
+                };
               };
             };
           };

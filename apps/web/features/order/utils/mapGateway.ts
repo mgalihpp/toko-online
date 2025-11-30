@@ -7,7 +7,7 @@ import type {
 
 export const mapGatewayResponseToPaymentDetail = (
   gatewayResponse: PaymentGatewaySuccessResponse,
-  _order?: Orders, // atau tipe order kamu
+  _order?: Orders // atau tipe order kamu
 ): PaymentDetail => {
   const paymentType = gatewayResponse.payment_type;
 
@@ -22,14 +22,14 @@ export const mapGatewayResponseToPaymentDetail = (
       bank: bankName,
       accountNumber: va?.va_number || gatewayResponse.permata_va_number,
       expiryTime: `${format(
-        new Date(gatewayResponse.transaction_time),
-        "dd MMMM yyyy HH:mm",
+        new Date(gatewayResponse.expiry_time),
+        "dd MMMM yyyy HH:mm"
       )} WIB`,
       paidAt:
         gatewayResponse.settlement_time &&
         `${format(
           new Date(gatewayResponse.settlement_time),
-          "dd MMMM yyyy HH:mm",
+          "dd MMMM yyyy HH:mm"
         )} WIB`,
     };
   }
@@ -49,13 +49,13 @@ export const mapGatewayResponseToPaymentDetail = (
             : "QRIS",
       expiryTime: `${format(
         new Date(gatewayResponse.expiry_time),
-        "dd MMMM yyyy HH:mm",
+        "dd MMMM yyyy HH:mm"
       )} WIB`,
       paidAt:
         gatewayResponse.settlement_time &&
         `${format(
           new Date(gatewayResponse.settlement_time),
-          "dd MMMM yyyy HH:mm",
+          "dd MMMM yyyy HH:mm"
         )} WIB`,
     };
   }
@@ -68,14 +68,14 @@ export const mapGatewayResponseToPaymentDetail = (
       maskedCard: gatewayResponse.masked_card,
       expiryTime: `${format(
         new Date(gatewayResponse.expiry_time),
-        "dd MMMM yyyy HH:mm",
+        "dd MMMM yyyy HH:mm"
       )} WIB`,
 
       paidAt:
         gatewayResponse.settlement_time &&
         `${format(
           new Date(gatewayResponse.settlement_time),
-          "dd MMMM yyyy HH:mm",
+          "dd MMMM yyyy HH:mm"
         )} WIB`,
     };
   }

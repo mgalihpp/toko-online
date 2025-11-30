@@ -7,10 +7,44 @@ const paymentController = new PaymentController();
 /**
  * @swagger
  * tags:
- *   name: Address
- *   description: Address management endpoints
+ *   name: Payment
+ *   description: Payment status endpoints
  */
 
+/**
+ * @swagger
+ * /api/v1/payment/status/{id}:
+ *   get:
+ *     summary: Get payment status
+ *     description: Fetch Midtrans transaction status for the given order.
+ *     tags: [Payment]
+ *     parameters:
+ *       - $ref: '#/components/parameters/OrderId'
+ *     responses:
+ *       200:
+ *         description: Payment status retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/PaymentStatus'
+ *       404:
+ *         description: Payment not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Provider error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 paymentRouter.get(
   "/status/:id",
   authenticateMiddleware,

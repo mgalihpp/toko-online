@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
+/** biome-ignore-all lint/correctness/useExhaustiveDependencies: <explanation> */
 "use client";
 
 import { Badge } from "@repo/ui/components/badge";
@@ -34,11 +36,51 @@ declare global {
 
 const scriptId = "midtrans-snap-script";
 
+type StatusConfig = {
+  icon: typeof Check;
+  bgColor: string;
+  textColor: string;
+  title: string;
+  message: string;
+};
+
+type OrderStep = {
+  icon: typeof Check;
+  label: string;
+  active: boolean;
+  date: string | Date | null | undefined;
+};
+
+type OrderItem = {
+  id: string | number;
+  title?: string | null;
+  quantity: number;
+  total_price_cents?: number | string | null;
+  variant?: {
+    option_values?: unknown;
+    product: { product_images: Array<{ url: string }> };
+    additional_price_cents?: number | string | null;
+  } | null;
+};
+
+const extractStatusCode = (error: unknown) => {
+  if (
+    error &&
+    typeof error === "object" &&
+    "response" in error &&
+    error.response &&
+    typeof (error as { response?: { status?: unknown } }).response?.status ===
+      "number"
+  ) {
+    return (error as { response: { status: number } }).response.status;
+  }
+  return undefined;
+};
+
 const OrderDetails = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const order_id = searchParams.get("order_id");
-  const status_code = searchParams.get("status_code");
   const transaction_status =
     searchParams.get("transaction_status") || "settlement";
   const [runUpdatePaymentStatusAction] = useServerAction(updatePaymentStatus);
@@ -47,65 +89,68 @@ const OrderDetails = () => {
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail | null>(
     null
   );
+  const [hasAutoCancelled, setHasAutoCancelled] = useState(false);
 
-  const { orderData, paymentData, isLoading, isError, isPaymentError } =
-    useOrderWithPayment(order_id as string);
+  const {
+    orderData,
+    paymentData,
+    isLoading,
+    isError,
+    isOrderError,
+    isPaymentError,
+    paymentError,
+  } = useOrderWithPayment(order_id as string);
 
-  const shippingStatus = orderData?.shipments?.[0]?.status ?? "";
+  const payment = orderData?.payments?.[0];
+  const shipment = orderData?.shipments?.[0];
+  const shippingStatus = shipment?.status ?? "";
 
-  const getStatusConfig = () => {
-    switch (orderData?.payments[0]?.status) {
-      case "pending":
-        return {
-          icon: Clock,
-          bgColor: "bg-yellow-500",
-          textColor: "text-yellow-500",
-          title: "Menunggu Pembayaran",
-          message: "Silakan selesaikan pembayaran sebelum waktu berakhir",
-        };
-      case "failed":
-        return {
-          icon: XCircle,
-          bgColor: "bg-destructive",
-          textColor: "text-destructive",
-          title: "Pembayaran Gagal",
-          message: "Pembayaran Anda tidak berhasil diproses",
-        };
-      case "cancelled":
-      case "cancel":
-        return {
-          icon: XCircle,
-          bgColor: "bg-destructive",
-          textColor: "text-destructive",
-          title: "Transaksi dibatalkan",
-          message: "Transaksi Anda dibatalkan, silahkan coba lagi",
-        };
-      default:
-        return {
-          icon: Check,
-          bgColor: "bg-foreground",
-          textColor: "text-foreground",
-          title: "Pesanan Berhasil!",
-          message: "Pesanan Anda sedang diproses",
-        };
-    }
-  };
+  const statusConfig = getStatusConfig(payment?.status);
+  const orderSteps = buildOrderSteps(
+    shippingStatus,
+    payment?.paid_at,
+    shipment?.shipped_at,
+    shipment?.delivered_at
+  );
+  const isPendingPayment = payment?.status === "pending";
+  const isFailedPayment = payment?.status === "failed";
+  const isCancelledPayment =
+    payment?.status === "cancelled" || payment?.status === "cancel";
+  const isSettlement = payment?.status === "settlement";
+  const paymentStatusCode = extractStatusCode(paymentError);
+  const isPaymentNotFound = isPaymentError && paymentStatusCode === 404;
+  const isPaymentServerError =
+    isPaymentError &&
+    typeof paymentStatusCode === "number" &&
+    paymentStatusCode >= 500;
+  const isOrderStatusCancelled =
+    orderData?.status === "cancel" || orderData?.status === "cancelled";
 
-  const statusConfig = getStatusConfig();
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (paymentData?.transaction_status === "cancel") {
+    if (
+      paymentData?.transaction_status === "cancel" &&
+      !hasAutoCancelled &&
+      !isCancelledPayment &&
+      !isOrderStatusCancelled
+    ) {
       runUpdatePaymentStatusAction({
         order_id: order_id as string,
         status: "cancel",
       });
 
       runCancelOrderAction(order_id as string);
+      setHasAutoCancelled(true);
     }
-  }, [order_id, paymentData?.transaction_status]);
+  }, [
+    order_id,
+    paymentData?.transaction_status,
+    hasAutoCancelled,
+    isCancelledPayment,
+    isOrderStatusCancelled,
+    runUpdatePaymentStatusAction,
+    runCancelOrderAction,
+  ]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (paymentData?.transaction_status === "settlement") {
       runUpdatePaymentStatusAction({
@@ -116,10 +161,10 @@ const OrderDetails = () => {
   }, [order_id, paymentData?.transaction_status]);
 
   useEffect(() => {
-    if (transaction_status === "pending" && paymentData) {
-      setPaymentDetail(mapGatewayResponseToPaymentDetail(paymentData));
-    }
-    if (transaction_status === "settlement" && paymentData) {
+    if (
+      paymentData &&
+      (transaction_status === "pending" || transaction_status === "settlement")
+    ) {
       setPaymentDetail(mapGatewayResponseToPaymentDetail(paymentData));
     }
   }, [transaction_status, paymentData]);
@@ -148,7 +193,7 @@ const OrderDetails = () => {
   }, []);
 
   const handlePayment = () => {
-    if (!orderData?.payments[0]?.provider_payment_id) {
+    if (!orderData?.payments?.[0]?.provider_payment_id) {
       toast.error("Tidak bisa melakukan pembayaran");
       return;
     }
@@ -160,7 +205,7 @@ const OrderDetails = () => {
       return;
     }
 
-    window.snap?.pay(orderData?.payments[0]?.provider_payment_id, {
+    window.snap?.pay(orderData?.payments?.[0]?.provider_payment_id, {
       language: "id",
       onSuccess: async (result) => {
         console.log(result);
@@ -189,68 +234,92 @@ const OrderDetails = () => {
     });
   };
 
-  const getStepDate = (stepIndex: number) => {
-    const shipment = orderData?.shipments?.[0];
-    if (!shipment) return null;
+  useEffect(() => {
+    if (!isPaymentNotFound || !order_id || hasAutoCancelled) return;
 
-    switch (stepIndex) {
-      case 0: // Pesanan Diterima → waktu pembayaran selesai (settlement)
-        return orderData?.payments?.[0]?.paid_at;
+    (async () => {
+      try {
+        await runUpdatePaymentStatusAction({
+          order_id,
+          status: "cancel",
+        });
+        await runCancelOrderAction(order_id);
+        toast.error("Pembayaran tidak ditemukan, pesanan dibatalkan otomatis.");
+      } catch (error) {
+        console.error("Failed to auto cancel order", error);
+      } finally {
+        setHasAutoCancelled(true);
+      }
+    })();
+  }, [
+    isPaymentNotFound,
+    order_id,
+    hasAutoCancelled,
+    runUpdatePaymentStatusAction,
+    runCancelOrderAction,
+  ]);
 
-      case 1: // Sedang Diproses → biasanya sama dengan paid_at atau processed_at kalau ada
-        return orderData?.payments?.[0]?.paid_at;
+  useEffect(() => {
+    if (
+      !isPaymentServerError ||
+      !order_id ||
+      hasAutoCancelled ||
+      isCancelledPayment ||
+      isOrderStatusCancelled
+    )
+      return;
 
-      case 2: // Dalam Pengiriman → shipped_at
-        return shipment.shipped_at;
-
-      case 3: // Terkirim → delivered_at
-        return shipment.delivered_at;
-
-      default:
-        return null;
-    }
-  };
-
-  const orderSteps = [
-    {
-      icon: Check,
-      label: "Pesanan Diterima",
-      active: [
-        "ready",
-        "processing",
-        "shipped",
-        "in_transit",
-        "delivered",
-      ].includes(shippingStatus),
-      date: getStepDate(0),
-    },
-    {
-      icon: Package,
-      label: "Sedang Diproses",
-      active: ["processing", "shipped", "in_transit", "delivered"].includes(
-        shippingStatus
-      ),
-      date: getStepDate(1),
-    },
-    {
-      icon: Truck,
-      label: "Dalam Pengiriman",
-      active: ["shipped", "in_transit", "delivered"].includes(shippingStatus),
-      date: getStepDate(2),
-    },
-    {
-      icon: Home,
-      label: "Terkirim",
-      active: ["delivered"].includes(shippingStatus),
-      date: getStepDate(3),
-    },
-  ];
+    (async () => {
+      try {
+        await runUpdatePaymentStatusAction({
+          order_id,
+          status: "cancel",
+        });
+        await runCancelOrderAction(order_id);
+        toast.error(
+          "Terjadi kendala pada pembayaran. Pesanan dibatalkan otomatis."
+        );
+      } catch (error) {
+        console.error("Failed to auto cancel order after server error", error);
+      } finally {
+        setHasAutoCancelled(true);
+      }
+    })();
+  }, [
+    isPaymentServerError,
+    order_id,
+    hasAutoCancelled,
+    isCancelledPayment,
+    isOrderStatusCancelled,
+    runUpdatePaymentStatusAction,
+    runCancelOrderAction,
+  ]);
 
   if (isLoading) {
     return <OrderSkeleton />;
   }
 
-  if (isError) {
+  if (isOrderError) {
+    return (
+      <ErrorAlert
+        title="Terjadi Kesalahan"
+        description="Gagal memuat detail pesanan. Silakan coba lagi."
+        action={() => window.location.reload()}
+      />
+    );
+  }
+
+  if (isPaymentError && !isPaymentNotFound && !isPaymentServerError) {
+    return (
+      <ErrorAlert
+        title="Status Pembayaran Bermasalah"
+        description={"Gagal memuat status pembayaran. Silakan coba lagi."}
+        action={() => window.location.reload()}
+      />
+    );
+  }
+
+  if (isError && !isPaymentNotFound) {
     return (
       <ErrorAlert
         title="Terjadi Kesalahan"
@@ -264,369 +333,50 @@ const OrderDetails = () => {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 lg:px-8 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-4">
-            <div
-              className={`w-16 h-16 ${statusConfig.bgColor} text-background rounded-full flex items-center justify-center mx-auto`}
-            >
-              <statusConfig.icon className="h-8 w-8" />
-            </div>
-            <h1 className="text-4xl font-bold">{statusConfig.title}</h1>
-            <p className="text-xl text-muted-foreground">
-              Order ID: #{orderData?.id}
-            </p>
-            {orderData?.payments[0]?.status === "pending" && (
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mt-4">
-                <div className="flex items-center justify-center gap-2 text-yellow-500">
-                  <AlertCircle className="h-5 w-5" />
-                  <p className="font-semibold">
-                    Selesaikan pembayaran sebelum {paymentDetail?.expiryTime}
-                  </p>
-                </div>
-              </div>
-            )}
-            {orderData?.payments[0]?.status === "failed" ||
-              (orderData?.payments[0]?.status === "cancelled" && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mt-4">
-                  <p className="text-destructive font-semibold">
-                    {statusConfig.message}
-                  </p>
-                </div>
-              ))}
-          </div>
+          <StatusHeader
+            orderId={orderData?.id}
+            config={statusConfig}
+            isPending={isPendingPayment}
+            isFailedOrCancelled={isFailedPayment || isCancelledPayment}
+            expiryTime={paymentDetail?.expiryTime}
+            message={statusConfig.message}
+          />
 
-          {orderData?.payments[0]?.status === "settlement" && (
-            <div className="border border-border p-8">
-              <h2 className="text-2xl font-bold mb-6">Status Pesanan</h2>
-              <div className="block md:relative">
-                {/* Desktop: Horizontal Timeline */}
-                <div className="hidden md:block">
-                  {/* Connection Lines */}
-                  {/* Garis Penghubung – Versi SUPER RAPI */}
-                  <div className="absolute inset-x-0 top-6 flex items-center pointer-events-none">
-                    <div className="flex-1 flex justify-between items-center px-[80px]">
-                      {orderSteps.map((_, index) => {
-                        // Jangan render garis setelah step terakhir
-                        if (index === orderSteps.length - 1) return null;
+          {isSettlement && <OrderTimeline steps={orderSteps} />}
 
-                        const isActive = orderSteps[index + 1]?.active;
+          <OrderItemsCard
+            items={orderData?.order_items as unknown as OrderItem[]}
+            orderStatus={orderData?.status}
+            totals={{
+              subtotal: Number(orderData?.subtotal_cents),
+              tax: Number(orderData?.tax_cents),
+              shipping: Number(orderData?.shipping_cents),
+              total: Number(orderData?.total_cents),
+            }}
+          />
 
-                        return (
-                          <div
-                            key={index}
-                            className="flex-1 flex items-center justify-center relative"
-                          >
-                            <div
-                              className={`absolute w-full h-0.5 transition-all duration-500 ease-in-out ${
-                                isActive ? "bg-foreground" : "bg-border"
-                              }`}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Desktop Steps */}
-                  <div className="relative flex justify-between">
-                    {orderSteps.map((step, index) => {
-                      const Icon = step.icon;
-                      const stepDate = step.date
-                        ? format(new Date(step.date), "dd MMM yyyy HH:mm")
-                        : null;
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex flex-col items-center flex-1 relative z-10"
-                        >
-                          <div
-                            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 transition-all ${
-                              step.active
-                                ? "bg-foreground border-foreground text-background scale-110"
-                                : "border-border bg-background"
-                            }`}
-                          >
-                            <Icon className="h-6 w-6" />
-                          </div>
-
-                          <div className="text-center">
-                            <p
-                              className={`text-sm font-medium ${step.active ? "text-foreground" : "text-muted-foreground"}`}
-                            >
-                              {step.label}
-                            </p>
-                            {step.active && stepDate && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {stepDate} WIB
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Mobile: Vertical List */}
-                <div className="md:hidden space-y-6">
-                  {orderSteps.map((step, index) => {
-                    const Icon = step.icon;
-                    const stepDate = step.date
-                      ? format(new Date(step.date), "dd MMM yyyy HH:mm")
-                      : null;
-
-                    return (
-                      <div key={index} className="flex items-start gap-4">
-                        {/* Icon + Line */}
-                        <div className="relative">
-                          <div
-                            className={`w-12 h-12 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              step.active
-                                ? "bg-foreground border-foreground text-background"
-                                : "border-border bg-background"
-                            }`}
-                          >
-                            <Icon className="h-6 w-6" />
-                          </div>
-
-                          {/* Vertical line (kecuali item terakhir) */}
-                          {index < orderSteps.length - 1 && (
-                            <div
-                              className={`absolute top-12 left-6 w-0.5 h-16 -translate-x-1/2 transition-all ${
-                                orderSteps[index + 1]?.active
-                                  ? "bg-foreground"
-                                  : "bg-border"
-                              }`}
-                            />
-                          )}
-                        </div>
-
-                        {/* Text */}
-                        <div className="flex-1 pb-8">
-                          <p
-                            className={`font-medium ${step.active ? "text-foreground" : "text-muted-foreground"}`}
-                          >
-                            {step.label}
-                          </p>
-                          {step.active && stepDate && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {stepDate} WIB
-                            </p>
-                          )}
-                          {step.active && !stepDate && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              -
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="border border-border p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Detail Pesanan</h2>
-              <Badge
-                className={
-                  statusColors[orderData?.status as keyof typeof statusColors]
-                }
-              >
-                {orderData?.status}
-              </Badge>
-            </div>
-            <div className="space-y-4">
-              {orderData?.order_items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex gap-6 pb-4 border-b border-border"
-                >
-                  <div className="w-24 h-24 bg-secondary border border-border flex-shrink-0">
-                    <img
-                      src={item.variant?.product.product_images[0]?.url ?? ""}
-                      alt={item.title ?? ""}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold mb-1">{item.title}</h3>
-                    <VariantInfo variant={item.variant} />
-
-                    <p className="text-sm text-muted-foreground">
-                      Jumlah: {item.quantity}
-                    </p>
-                    <p className="font-bold mt-2">
-                      {formatCurrency(Number(item.total_price_cents))}{" "}
-                      {item.variant?.additional_price_cents &&
-                      Number(item.variant.additional_price_cents) > 0
-                        ? `(+${formatCurrency(Number(item.variant.additional_price_cents))})`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-3 py-4 mt-4">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">
-                  {formatCurrency(Number(orderData?.subtotal_cents))}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pajak</span>
-                <span className="font-medium">
-                  {formatCurrency(Number(orderData?.tax_cents))}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pengiriman</span>
-                <span className="font-medium">
-                  {formatCurrency(Number(orderData?.shipping_cents))}
-                </span>
-              </div>
-              <div className="flex justify-between text-xl font-bold pt-3 border-t border-border">
-                <span>Total</span>
-                <span>{formatCurrency(Number(orderData?.total_cents))}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Shipping & Delivery Info */}
           {paymentDetail && (
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="border border-border p-8">
-                <h2 className="text-2xl font-bold mb-6">Alamat Pengiriman</h2>
-                <div className="space-y-2 text-muted-foreground">
-                  <p className="font-semibold text-foreground">
-                    {orderData?.address?.recipient_name}
-                  </p>
-                  <p>{orderData?.address?.address_line1}</p>
-                  <p>
-                    {orderData?.address?.city},{" "}
-                    {orderData?.address?.postal_code}
-                  </p>
-                  <p>{orderData?.address?.phone}</p>
-                </div>
-              </div>
+              <AddressCard
+                name={orderData?.address?.recipient_name}
+                addressLine={orderData?.address?.address_line1}
+                city={orderData?.address?.city}
+                postalCode={orderData?.address?.postal_code}
+                phone={orderData?.address?.phone}
+              />
 
-              <div className="border border-border p-8">
-                <h2 className="text-2xl font-bold mb-6">
-                  {transaction_status === "pending"
-                    ? "Informasi Pembayaran"
-                    : "Informasi Pengiriman"}
-                </h2>
-                <div className="space-y-4">
-                  {transaction_status === "pending" || !paymentData ? (
-                    <>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Metode Pembayaran
-                        </p>
-                        <p className="font-medium">{paymentDetail?.method}</p>
-                      </div>
-
-                      {paymentDetail?.bank && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Bank</p>
-                          <p className="font-medium">{paymentDetail.bank}</p>
-                        </div>
-                      )}
-
-                      {paymentDetail?.accountNumber && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            No. Virtual Account
-                          </p>
-                          <p className="font-medium text-lg">
-                            {paymentDetail.accountNumber}
-                          </p>
-                        </div>
-                      )}
-
-                      {paymentDetail?.expiryTime && (
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Batas Waktu Pembayaran
-                          </p>
-                          <p className="font-medium text-yellow-600 text-lg">
-                            {paymentDetail.expiryTime}
-                          </p>
-                        </div>
-                      )}
-
-                      <Button className="w-full mt-4" onClick={handlePayment}>
-                        Bayar Sekarang
-                      </Button>
-                    </>
-                  ) : transaction_status === "failed" ? (
-                    <>
-                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Metode Pembayaran
-                        </p>
-                        <p className="font-medium">
-                          {paymentDetail?.method || "Unknown"}
-                        </p>
-                        <p className="text-destructive text-sm mt-2">
-                          Pembayaran tidak berhasil diproses
-                        </p>
-                      </div>
-                      <Button className="w-full mt-4" variant="destructive">
-                        Coba Lagi
-                      </Button>
-                    </>
-                  ) : (
-                    // SUCCESS / SHIPPED / DELIVERED
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          Tanggal Pembelian
-                        </p>
-                        <p className="font-medium text-foreground">
-                          {paymentDetail?.paidAt}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Kurir</p>
-                        <p className="font-medium text-foreground">
-                          {orderData?.shipments[0]?.shipment_method?.name
-                            ? orderData.shipments[0].shipment_method.name
-                            : "-"}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          Tanggal Terkirim
-                        </p>
-                        <p className="font-medium text-foreground">
-                          {orderData?.shipments?.[0]?.delivered_at
-                            ? `${format(
-                                new Date(orderData.shipments[0].delivered_at),
-                                "dd MMMM yyyy HH:mm"
-                              )} WIB`
-                            : "-"}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          No. Resi
-                        </p>
-                        <p className="font-medium font-mono text-foreground">
-                          {orderData?.shipments?.[0]?.tracking_number ?? "-"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <PaymentOrShippingCard
+                transactionStatus={transaction_status}
+                paymentStatus={payment?.status}
+                paymentDetail={paymentDetail}
+                paymentMethod={paymentDetail?.method}
+                shipmentMethod={
+                  orderData?.shipments?.[0]?.shipment_method?.name
+                }
+                deliveredAt={orderData?.shipments?.[0]?.delivered_at}
+                trackingNumber={orderData?.shipments?.[0]?.tracking_number}
+                onPay={handlePayment}
+              />
             </div>
           )}
 
@@ -675,6 +425,493 @@ function VariantInfo({ variant }: VariantInfoProps) {
       )}
     </>
   );
+}
+
+type StatusHeaderProps = {
+  orderId?: string | number;
+  config: StatusConfig;
+  isPending: boolean;
+  isFailedOrCancelled: boolean;
+  expiryTime?: string;
+  message: string;
+};
+
+function StatusHeader({
+  orderId,
+  config,
+  isPending,
+  isFailedOrCancelled,
+  expiryTime,
+  message,
+}: StatusHeaderProps) {
+  const Icon = config.icon;
+
+  return (
+    <div className="text-center space-y-4 border border-border p-8 rounded-lg">
+      <div
+        className={`w-16 h-16 ${config.bgColor} text-background rounded-full flex items-center justify-center mx-auto`}
+      >
+        <Icon className="h-8 w-8" />
+      </div>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">{config.title}</h1>
+        <p className="text-lg text-muted-foreground">Order ID: #{orderId}</p>
+      </div>
+
+      {isPending && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mt-2">
+          <div className="flex items-center justify-center gap-2 text-yellow-600">
+            <AlertCircle className="h-5 w-5" />
+            <p className="font-semibold">
+              Selesaikan pembayaran sebelum {expiryTime}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isFailedOrCancelled && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mt-2">
+          <p className="text-destructive font-semibold">{message}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderTimeline({ steps }: { steps: OrderStep[] }) {
+  return (
+    <div className="border border-border p-8 rounded-lg">
+      <h2 className="text-2xl font-bold mb-6">Status Pesanan</h2>
+      <div className="block md:relative">
+        <div className="hidden md:block">
+          <div className="absolute inset-x-0 top-6 flex items-center pointer-events-none">
+            <div className="flex-1 flex justify-between items-center px-[80px]">
+              {steps.map((_, index) => {
+                if (index === steps.length - 1) return null;
+
+                const isActive = steps[index + 1]?.active;
+
+                return (
+                  <div
+                    key={index}
+                    className="flex-1 flex items-center justify-center relative"
+                  >
+                    <div
+                      className={`absolute w-full h-0.5 transition-all duration-500 ease-in-out ${
+                        isActive ? "bg-foreground" : "bg-border"
+                      }`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="relative flex justify-between">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const stepDate = step.date
+                ? format(new Date(step.date), "dd MMM yyyy HH:mm")
+                : null;
+
+              return (
+                <div
+                  key={index}
+                  className="flex flex-col items-center flex-1 relative z-10"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 transition-all ${
+                      step.active
+                        ? "bg-foreground border-foreground text-background scale-110"
+                        : "border-border bg-background"
+                    }`}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </div>
+
+                  <div className="text-center">
+                    <p
+                      className={`text-sm font-medium ${step.active ? "text-foreground" : "text-muted-foreground"}`}
+                    >
+                      {step.label}
+                    </p>
+                    {step.active && stepDate && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stepDate} WIB
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="md:hidden space-y-6">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            const stepDate = step.date
+              ? format(new Date(step.date), "dd MMM yyyy HH:mm")
+              : null;
+
+            return (
+              <div key={index} className="flex items-start gap-4">
+                <div className="relative">
+                  <div
+                    className={`w-12 h-12 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      step.active
+                        ? "bg-foreground border-foreground text-background"
+                        : "border-border bg-background"
+                    }`}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </div>
+
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`absolute top-12 left-6 w-0.5 h-16 -translate-x-1/2 transition-all ${
+                        steps[index + 1]?.active ? "bg-foreground" : "bg-border"
+                      }`}
+                    />
+                  )}
+                </div>
+
+                <div className="flex-1 pb-8">
+                  <p
+                    className={`font-medium ${step.active ? "text-foreground" : "text-muted-foreground"}`}
+                  >
+                    {step.label}
+                  </p>
+                  {step.active && stepDate && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {stepDate} WIB
+                    </p>
+                  )}
+                  {step.active && !stepDate && (
+                    <p className="text-sm text-muted-foreground mt-1">-</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type OrderItemsCardProps = {
+  items?: OrderItem[];
+  orderStatus?: string | null;
+  totals: {
+    subtotal?: number | null;
+    tax?: number | null;
+    shipping?: number | null;
+    total?: number | null;
+  };
+};
+
+function OrderItemsCard({ items, orderStatus, totals }: OrderItemsCardProps) {
+  const statusClass = orderStatus
+    ? statusColors[orderStatus as keyof typeof statusColors]
+    : "bg-muted text-foreground";
+
+  return (
+    <div className="border border-border p-8 rounded-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold">Detail Pesanan</h2>
+        </div>
+        <Badge className={statusClass}>{orderStatus}</Badge>
+      </div>
+      <div className="space-y-4">
+        {items?.map((item) => (
+          <div
+            key={item.id}
+            className="flex gap-6 pb-4 border-b border-border last:border-0 last:pb-0"
+          >
+            <div className="w-24 h-24 bg-secondary border border-border flex-shrink-0 rounded-md overflow-hidden">
+              <img
+                src={item.variant?.product?.product_images?.[0]?.url ?? ""}
+                alt={item.title ?? ""}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h3 className="font-bold">{item.title}</h3>
+              <VariantInfo variant={item.variant} />
+              <p className="text-sm text-muted-foreground">
+                Jumlah: {item.quantity}
+              </p>
+              <p className="font-bold mt-2">
+                {formatCurrency(Number(item.total_price_cents))}{" "}
+                {item.variant?.additional_price_cents &&
+                Number(item.variant.additional_price_cents) > 0
+                  ? `(+${formatCurrency(
+                      Number(item.variant.additional_price_cents)
+                    )})`
+                  : ""}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3 py-4 mt-4 border-t border-border">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="font-medium">
+            {formatCurrency(totals.subtotal ?? 0)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Pajak</span>
+          <span className="font-medium">{formatCurrency(totals.tax ?? 0)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Pengiriman</span>
+          <span className="font-medium">
+            {formatCurrency(totals.shipping ?? 0)}
+          </span>
+        </div>
+        <div className="flex justify-between text-xl font-bold pt-3">
+          <span>Total</span>
+          <span>{formatCurrency(totals.total ?? 0)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type AddressCardProps = {
+  name?: string | null;
+  addressLine?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  phone?: string | null;
+};
+
+function AddressCard({
+  name,
+  addressLine,
+  city,
+  postalCode,
+  phone,
+}: AddressCardProps) {
+  return (
+    <div className="border border-border p-8 rounded-lg">
+      <h2 className="text-2xl font-bold mb-6">Alamat Pengiriman</h2>
+      <div className="space-y-2 text-muted-foreground">
+        <p className="font-semibold text-foreground">{name}</p>
+        <p>{addressLine}</p>
+        <p>
+          {city}, {postalCode}
+        </p>
+        <p>{phone}</p>
+      </div>
+    </div>
+  );
+}
+
+type PaymentOrShippingCardProps = {
+  transactionStatus: string;
+  paymentStatus?: string | null;
+  paymentDetail: PaymentDetail | null;
+  paymentMethod?: string | null;
+  shipmentMethod?: string | null;
+  deliveredAt?: string | Date | null;
+  trackingNumber?: string | null;
+  onPay: () => void;
+};
+
+function PaymentOrShippingCard({
+  transactionStatus,
+  paymentStatus,
+  paymentDetail,
+  paymentMethod,
+  shipmentMethod,
+  deliveredAt,
+  trackingNumber,
+  onPay,
+}: PaymentOrShippingCardProps) {
+  const displayStatus = paymentStatus || transactionStatus;
+  const isPending = displayStatus === "pending";
+  const isFailed = displayStatus === "failed";
+
+  const deliveredDate = deliveredAt
+    ? `${format(new Date(deliveredAt), "dd MMMM yyyy HH:mm")} WIB`
+    : "-";
+
+  if (isPending || !paymentDetail) {
+    return (
+      <div className="border border-border p-8 rounded-lg space-y-4">
+        <h2 className="text-2xl font-bold mb-2">Informasi Pembayaran</h2>
+
+        <div>
+          <p className="text-sm text-muted-foreground">Metode Pembayaran</p>
+          <p className="font-medium">{paymentDetail?.method}</p>
+        </div>
+
+        {paymentDetail?.bank && (
+          <div>
+            <p className="text-sm text-muted-foreground">Bank</p>
+            <p className="font-medium">{paymentDetail.bank}</p>
+          </div>
+        )}
+
+        {paymentDetail?.accountNumber && (
+          <div>
+            <p className="text-sm text-muted-foreground">No. Virtual Account</p>
+            <p className="font-medium text-lg">{paymentDetail.accountNumber}</p>
+          </div>
+        )}
+
+        {paymentDetail?.expiryTime && (
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Batas Waktu Pembayaran
+            </p>
+            <p className="font-medium text-yellow-600 text-lg">
+              {paymentDetail.expiryTime}
+            </p>
+          </div>
+        )}
+
+        <Button className="w-full mt-2" onClick={onPay}>
+          Bayar Sekarang
+        </Button>
+      </div>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <div className="border border-border p-8 rounded-lg space-y-4">
+        <h2 className="text-2xl font-bold mb-2">Informasi Pembayaran</h2>
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <p className="text-sm text-muted-foreground mb-2">
+            Metode Pembayaran
+          </p>
+          <p className="font-medium">{paymentMethod || "Unknown"}</p>
+          <p className="text-destructive text-sm mt-2">
+            Pembayaran tidak berhasil diproses
+          </p>
+        </div>
+        <Button className="w-full mt-4" variant="destructive">
+          Coba Lagi
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border p-8 rounded-lg space-y-4">
+      <h2 className="text-2xl font-bold mb-2">Informasi Pengiriman</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <InfoField label="Tanggal Pembelian" value={paymentDetail?.paidAt} />
+        <InfoField label="Kurir" value={shipmentMethod || "-"} />
+        <InfoField label="Tanggal Terkirim" value={deliveredDate} />
+        <InfoField label="No. Resi" value={trackingNumber || "-"} mono />
+      </div>
+    </div>
+  );
+}
+
+type InfoFieldProps = {
+  label: string;
+  value?: string | null;
+  mono?: boolean;
+};
+
+function InfoField({ label, value, mono }: InfoFieldProps) {
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className={`font-medium text-foreground ${mono ? "font-mono" : ""}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function getStatusConfig(status?: string | null): StatusConfig {
+  switch (status) {
+    case "pending":
+      return {
+        icon: Clock,
+        bgColor: "bg-yellow-500",
+        textColor: "text-yellow-500",
+        title: "Menunggu Pembayaran",
+        message: "Silakan selesaikan pembayaran sebelum waktu berakhir",
+      };
+    case "failed":
+      return {
+        icon: XCircle,
+        bgColor: "bg-destructive",
+        textColor: "text-destructive",
+        title: "Pembayaran Gagal",
+        message: "Pembayaran Anda tidak berhasil diproses",
+      };
+    case "cancelled":
+    case "cancel":
+      return {
+        icon: XCircle,
+        bgColor: "bg-destructive",
+        textColor: "text-destructive",
+        title: "Transaksi dibatalkan",
+        message: "Transaksi Anda dibatalkan, silahkan coba lagi",
+      };
+    default:
+      return {
+        icon: Check,
+        bgColor: "bg-foreground",
+        textColor: "text-foreground",
+        title: "Pesanan Berhasil!",
+        message: "Pesanan Anda sedang diproses",
+      };
+  }
+}
+
+function buildOrderSteps(
+  shippingStatus: string,
+  paidAt?: string | Date | null,
+  shippedAt?: string | Date | null,
+  deliveredAt?: string | Date | null
+): OrderStep[] {
+  return [
+    {
+      icon: Check,
+      label: "Pesanan Diterima",
+      active: [
+        "ready",
+        "processing",
+        "shipped",
+        "in_transit",
+        "delivered",
+      ].includes(shippingStatus),
+      date: paidAt,
+    },
+    {
+      icon: Package,
+      label: "Sedang Diproses",
+      active: ["processing", "shipped", "in_transit", "delivered"].includes(
+        shippingStatus
+      ),
+      date: paidAt,
+    },
+    {
+      icon: Truck,
+      label: "Dalam Pengiriman",
+      active: ["shipped", "in_transit", "delivered"].includes(shippingStatus),
+      date: shippedAt,
+    },
+    {
+      icon: Home,
+      label: "Terkirim",
+      active: ["delivered"].includes(shippingStatus),
+      date: deliveredAt,
+    },
+  ];
 }
 
 function OrderSkeleton() {

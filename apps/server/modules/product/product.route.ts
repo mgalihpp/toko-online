@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAdmin } from "@/middleware/admin";
+import { authenticateMiddleware } from "@/middleware/authenticated";
 import { ProductVariantsController } from "../variant/variant.controller";
 import { ProductController } from "./product.controller";
 
@@ -46,8 +47,123 @@ const productVariantsController = new ProductVariantsController();
  */
 productRouter.get("/", productController.getAll);
 
+/**
+ * @swagger
+ * /api/v1/products/related/{id}:
+ *   get:
+ *     summary: Get related products
+ *     tags: [Products]
+ *     parameters:
+ *       - $ref: '#/components/parameters/ProductId'
+ *     responses:
+ *       200:
+ *         description: Related products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Product not found
+ */
 productRouter.get("/related/:id", productController.getRelatedProducts);
+
+/**
+ * @swagger
+ * /api/v1/products/filters:
+ *   get:
+ *     summary: List products using filters
+ *     tags: [Products]
+ *     parameters:
+ *       - name: categoryId
+ *         in: query
+ *         schema:
+ *           type: string
+ *       - name: colors[]
+ *         in: query
+ *         style: form
+ *         explode: true
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - name: sizes[]
+ *         in: query
+ *         style: form
+ *         explode: true
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - name: priceRange[]
+ *         in: query
+ *         style: form
+ *         explode: true
+ *         schema:
+ *           type: array
+ *           minItems: 2
+ *           maxItems: 2
+ *           items:
+ *             type: integer
+ *       - name: query
+ *         in: query
+ *         schema:
+ *           type: string
+ *       - name: page
+ *         in: query
+ *         schema:
+ *           type: integer
+ *       - name: limit
+ *         in: query
+ *         schema:
+ *           type: integer
+ *       - name: sort
+ *         in: query
+ *         schema:
+ *           type: string
+ *           enum: [newest, price_asc, price_desc]
+ *     responses:
+ *       200:
+ *         description: Filtered products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Product'
+ */
 productRouter.get("/filters", productController.getAllByFilters);
+
+/**
+ * @swagger
+ * /api/v1/products/get-filters:
+ *   get:
+ *     summary: Get available filter options
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Available filter options
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProductFilterOptions'
+ */
 productRouter.get("/get-filters", productController.getAvailableFilters);
 
 /**
@@ -73,6 +189,128 @@ productRouter.get("/get-filters", productController.getAvailableFilters);
  *               $ref: '#/components/schemas/Error'
  */
 productRouter.get("/:id", productController.getById);
+
+/**
+ * @swagger
+ * /api/v1/products/{id}/reviews:
+ *   get:
+ *     summary: Get product reviews
+ *     tags: [Products]
+ *     parameters:
+ *       - $ref: '#/components/parameters/ProductId'
+ *     responses:
+ *       200:
+ *         description: List of reviews
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Review'
+ */
+productRouter.get("/:id/reviews", productController.getProductReviews);
+
+/**
+ * @swagger
+ * /api/v1/products/{id}/reviews:
+ *   post:
+ *     summary: Create product review
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/ProductId'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - product_id
+ *               - rating
+ *             properties:
+ *               product_id:
+ *                 type: string
+ *                 format: uuid
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               title:
+ *                 type: string
+ *                 nullable: true
+ *               body:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Review created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Review'
+ *       409:
+ *         description: Review already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+productRouter.post(
+  "/:id/reviews",
+  authenticateMiddleware,
+  productController.createProductReview
+);
+
+/**
+ * @swagger
+ * /api/v1/products/review/{id}:
+ *   delete:
+ *     summary: Delete product review
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Review deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Review'
+ *       404:
+ *         description: Review not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+productRouter.delete(
+  "/review/:id",
+  authenticateMiddleware,
+  productController.deleteProductReview
+);
 
 /**
  * @swagger

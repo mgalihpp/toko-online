@@ -13,7 +13,7 @@ interface FilterCategoryProps {
   setFilter: React.Dispatch<React.SetStateAction<FilterProps>>;
   filter: FilterProps;
   isLoading: boolean;
-  categories: Categories[];
+  categories: Categories[] | undefined;
 }
 
 const FilterCategory: React.FC<FilterCategoryProps> = ({
@@ -44,7 +44,7 @@ const FilterCategory: React.FC<FilterCategoryProps> = ({
                       "text-gray-900": filter.category === null,
                       "text-grey-3 hover:text-gray-900 hover:text-opacity-75":
                         filter.category !== null,
-                    },
+                    }
                   )}
                   onClick={() => {
                     setFilter((prev) => ({
@@ -66,7 +66,7 @@ const FilterCategory: React.FC<FilterCategoryProps> = ({
                         "text-gray-900": filter.category === category.id,
                         "text-grey-3 hover:text-gray-900 hover:text-opacity-75":
                           filter.category !== category.id,
-                      },
+                      }
                     )}
                     onClick={() => {
                       setFilter((prev) => ({
@@ -89,6 +89,7 @@ const FilterCategory: React.FC<FilterCategoryProps> = ({
 
 const FilterCategorySkeleton = () => {
   return Array.from({ length: 4 }, (_, index) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
     <Skeleton className="mb-4 h-5 w-full" key={index} />
   ));
 };

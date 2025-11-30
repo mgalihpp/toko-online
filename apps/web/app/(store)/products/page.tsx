@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
 "use client";
 
 import {
@@ -85,6 +86,7 @@ export default function ProductsPage() {
     data: products,
     isPending: isProductsLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["products", filter],
     queryFn: () =>
@@ -258,7 +260,7 @@ export default function ProductsPage() {
                 setFilter={setFilter}
                 filter={filter}
                 isLoading={isCategoriesLoading}
-                categories={categories!}
+                categories={categories}
               />
               <FilterColor
                 applyArrayFilter={applyArrayFilter}
@@ -315,7 +317,7 @@ export default function ProductsPage() {
                   <ChevronDown className="size-4" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="p-0">
-                  {SORT_OPTIONS.map((option: any) => (
+                  {SORT_OPTIONS.map((option) => (
                     <button
                       key={option.name}
                       type="button"
@@ -323,7 +325,7 @@ export default function ProductsPage() {
                         "block w-full px-4 py-2 text-left text-sm hover:bg-gray-100",
                         option.value === filter.sort
                           ? "bg-gray-100 text-gray-900"
-                          : "text-gray-500",
+                          : "text-gray-500"
                       )}
                       onClick={() =>
                         setFilter((prev: any) => ({
@@ -355,7 +357,7 @@ export default function ProductsPage() {
                       setFilter={setFilter}
                       filter={filter}
                       isLoading={isCategoriesLoading}
-                      categories={categories!}
+                      categories={categories}
                     />
                     <FilterColor
                       applyArrayFilter={applyArrayFilter}
@@ -399,7 +401,10 @@ export default function ProductsPage() {
               ))}
             </ul>
           ) : isError ? (
-            <ErrorAlert description="Gagal mendapatkan data produk." />
+            <ErrorAlert
+              description="Gagal mendapatkan data produk."
+              action={refetch}
+            />
           ) : (
             <ProductGrid products={products} />
           )}

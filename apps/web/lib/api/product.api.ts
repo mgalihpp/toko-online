@@ -1,7 +1,8 @@
-import type { Product } from "@repo/db";
+import type { Product, Reviews } from "@repo/db";
 import type {
   CreateProductImagesInput,
   CreateProductInput,
+  CreateProductReviewInput,
   CreateVariantInput,
   UpdateProductInput,
   UpdateVariantInput,
@@ -20,7 +21,7 @@ export const productApi = {
 
   getById: async (productId: string) => {
     const res = await axios.get<ApiResponse<ProductWithRelations>>(
-      `/products/${productId}`,
+      `/products/${productId}`
     );
     const { data } = res.data;
     return data;
@@ -28,7 +29,7 @@ export const productApi = {
 
   getRelatedProducts: async (productId: string) => {
     const res = await axios.get<ApiResponse<ProductWithRelations[]>>(
-      `/products/related/${productId}`,
+      `/products/related/${productId}`
     );
     const { data } = res.data;
     return data;
@@ -55,7 +56,7 @@ export const productApi = {
   update: async (productId: string, input: UpdateProductInput) => {
     const res = await axios.put<ApiResponse<Product>>(
       `/products/${productId}`,
-      input,
+      input
     );
     const { data } = res.data;
     return data;
@@ -100,7 +101,7 @@ export const productApi = {
         "/products/filters",
         {
           params: filters,
-        },
+        }
       );
       const { data } = res.data;
       return data;
@@ -113,6 +114,31 @@ export const productApi = {
           sizes: string[];
         }>
       >("/products/get-filters");
+      const { data } = res.data;
+      return data;
+    },
+  },
+
+  review: {
+    create: async (input: CreateProductReviewInput) => {
+      const res = await axios.post<ApiResponse<Reviews>>(
+        `/products/${input.product_id}/reviews`,
+        input
+      );
+      const { data } = res.data;
+      return data;
+    },
+    delete: async (reviewId: string) => {
+      const res = await axios.post<ApiResponse<Reviews>>(
+        `/products/review/${reviewId}`
+      );
+      const { data } = res.data;
+      return data;
+    },
+    getAll: async (productId: string) => {
+      const res = await axios.post<ApiResponse<Reviews>>(
+        `/products/${productId}/reviews`
+      );
       const { data } = res.data;
       return data;
     },

@@ -16,6 +16,7 @@ export const useOrderWithPayment = (orderId: string) => {
     queryFn: () => api.payment.getStatus(orderId),
     enabled: !!orderId,
     staleTime: 1000 * 10, // 10 detik, karena status pembayaran bisa berubah
+    retry: 2,
   });
 
   const orderQuery = useQuery({
@@ -30,11 +31,13 @@ export const useOrderWithPayment = (orderId: string) => {
     paymentData: paymentQuery.data,
     isPaymentLoading: paymentQuery.isPending,
     isPaymentError: paymentQuery.isError,
+    paymentError: paymentQuery.error,
 
     // Order detail
     orderData: orderQuery.data,
     isOrderLoading: orderQuery.isPending,
     isOrderError: orderQuery.isError,
+    orderError: orderQuery.error,
 
     // Kombinasi loading state
     isLoading: paymentQuery.isPending || orderQuery.isPending,

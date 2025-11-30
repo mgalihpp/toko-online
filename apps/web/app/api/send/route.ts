@@ -17,11 +17,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
+      console.error(error);
       return NextResponse.json({ error }, { status: 500 });
     }
 
     return NextResponse.json(data);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error }, { status: 500 });
   }
 }

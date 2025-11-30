@@ -11,7 +11,7 @@ import { authClient } from "@/lib/auth-client";
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Nama wajib diisi").max(100),
   email: z.email("Email tidak valid").max(255),
-  phone: z.string().trim().min(10, "Nomor telepon minimal 10 digit").max(15),
+  // phone: z.string().trim().min(10, "Nomor telepon minimal 10 digit").max(15),
 });
 
 export const ProfileSection = () => {
@@ -23,6 +23,8 @@ export const ProfileSection = () => {
     avatar: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const initialDataRef = useRef(profileData);
 
   const { attachments, isUploading, startUpload, uploadProgress } =
     useUserMediaUpload();
@@ -40,19 +42,23 @@ export const ProfileSection = () => {
 
   const { ...rootProps } = getRootProps();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (data?.user.id) {
-      setProfileData({
-        name: data.user.name,
-        email: data.user.email,
+      const initialData = {
+        name: data?.user.name || "",
+        email: data?.user.email || "",
         phone: "",
-        avatar: data.user.image ?? "",
-      });
+        avatar: data?.user.image || "",
+      };
+
+      initialDataRef.current = initialData;
+      setProfileData(initialData);
     }
   }, [data?.user.id]);
 
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>(
-    {},
+    {}
   );
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -67,7 +73,8 @@ export const ProfileSection = () => {
         image: profileData.avatar,
         name: profileData.name,
       });
-
+      setIsDirty(false);
+      initialDataRef.current = { ...profileData };
       toast.success("Profil berhasil diperbarui");
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -93,8 +100,28 @@ export const ProfileSection = () => {
       startUpload(Array.from(files));
     } catch (err) {
       toast.error("Gagal mengunggah foto");
+      console.error(err);
     }
   };
+
+  const handleChange = (field: string, value: string) => {
+    setProfileData((prev) => ({ ...prev, [field]: value }));
+
+    // Cek apakah ada perubahan
+    const isChanged =
+      JSON.stringify(profileData) !== JSON.stringify(initialDataRef.current);
+    setIsDirty(isChanged);
+  };
+
+  // Update handler untuk semua input
+  const updateName = (e: React.ChangeEvent<HTMLInputElement>) =>
+    handleChange("name", e.target.value);
+
+  const updatePhone = (e: React.ChangeEvent<HTMLInputElement>) =>
+    handleChange("phone", e.target.value);
+
+  const updateEmail = (e: React.ChangeEvent<HTMLInputElement>) =>
+    handleChange("email", e.target.value);
 
   // ketika upload selesai, update avatar preview
   useEffect(() => {
@@ -102,9 +129,25 @@ export const ProfileSection = () => {
       const uploadedUrl = attachments[0]?.url;
       if (uploadedUrl) {
         setProfileData((prev) => ({ ...prev, avatar: uploadedUrl }));
+        setIsDirty(true);
       }
     }
   }, [attachments]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "Ada perubahan yang belum disimpan. Yakin mau keluar?";
+      return "Ada perubahan yang belum disimpan. Yakin mau keluar?";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  const isUpdating = isUploading || isLoading;
 
   return (
     <div className="max-w-3xl">
@@ -166,9 +209,7 @@ export const ProfileSection = () => {
             <Input
               id="name"
               value={profileData.name}
-              onChange={(e) =>
-                setProfileData({ ...profileData, name: e.target.value })
-              }
+              onChange={updateName}
               className="mt-2"
             />
             {profileErrors.name && (
@@ -178,14 +219,12 @@ export const ProfileSection = () => {
             )}
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="phone">Nomor Telepon</Label>
             <Input
               id="phone"
               value={profileData.phone}
-              onChange={(e) =>
-                setProfileData({ ...profileData, phone: e.target.value })
-              }
+              onChange={updatePhone}
               className="mt-2"
             />
             {profileErrors.phone && (
@@ -193,7 +232,7 @@ export const ProfileSection = () => {
                 {profileErrors.phone}
               </p>
             )}
-          </div>
+          </div> */}
         </div>
 
         <div>
@@ -202,9 +241,7 @@ export const ProfileSection = () => {
             id="email"
             type="email"
             value={profileData.email}
-            onChange={(e) =>
-              setProfileData({ ...profileData, email: e.target.value })
-            }
+            onChange={updateEmail}
             className="mt-2"
           />
           {profileErrors.email && (
@@ -219,7 +256,7 @@ export const ProfileSection = () => {
           className="w-full md:w-auto"
           disabled={isUploading || isLoading}
         >
-          Simpan Perubahan
+          {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
         </Button>
       </form>
     </div>
@@ -227,9 +264,6 @@ export const ProfileSection = () => {
 };
 
 const CircularProgress = ({ progress }: { progress: number }) => {
-  const radius = 44;
-  const circumference = 2 * Math.PI * radius;
-
   return (
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="absolute text-white text-xs font-medium">{progress}%</div>

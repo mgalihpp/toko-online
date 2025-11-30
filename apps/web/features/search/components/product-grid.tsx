@@ -1,5 +1,7 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
 "use client";
 
+import type { Reviews } from "@repo/db";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { memo } from "react";
@@ -11,6 +13,36 @@ export const ProductGrid = memo(function ProductGrid({
 }: {
   products: ProductWithRelations[];
 }) {
+  const renderStars = (reviews: Reviews[]) => {
+    const total =
+      reviews?.reduce((acc, review) => acc + (review.rating || 0), 0) || 0;
+    const count = reviews?.length || 0;
+    const avgRating = count > 0 ? total / count : 0;
+    const fullStars = Math.floor(avgRating);
+    const hasHalfStar = avgRating % 1 >= 0.5;
+
+    return (
+      <>
+        {Array(fullStars)
+          .fill(0)
+          .map((_, i) => (
+            <Star
+              key={`full-${i}`}
+              className="w-3 h-3 fill-current text-yellow-500"
+            />
+          ))}
+        {hasHalfStar && (
+          <Star key="half" className="w-3 h-3 fill-current text-yellow-400" />
+        )}
+        {Array(5 - fullStars - (hasHalfStar ? 1 : 0))
+          .fill(0)
+          .map((_, i) => (
+            <Star key={`empty-${i}`} className="w-3 h-3 text-gray-300" />
+          ))}
+      </>
+    );
+  };
+
   if (products.length === 0)
     return (
       <div className="text-center py-16">
@@ -22,9 +54,6 @@ export const ProductGrid = memo(function ProductGrid({
 
   return (
     <div className="lg:col-span-3">
-      {/* <p className="text-muted-foreground mb-4">
-        {products.length} produk ditemukan
-      </p> */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map((p) => (
           <Link
@@ -40,16 +69,21 @@ export const ProductGrid = memo(function ProductGrid({
               />
             </div>
             <div className="py-4 space-y-2">
-              <h3 className="font-medium text-sm line-clamp-2">{p.title}</h3>
+              <h3 className="font-medium text-sm line-clamp-1">{p.title}</h3>
               <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className="w-3 h-3 fill-current" />
-                ))}
+                {p.reviews.length !== 0 && renderStars(p.reviews)}
                 <span className="text-xs text-muted-foreground ml-1">
-                  {/* {p.reviews.reduce((acc, review) => acc + review.rating, 0) /
-                    p.reviews.length}{" "}
-                  ({p.reviews.length}) */}
-                  0
+                  {(() => {
+                    const total =
+                      p.reviews?.reduce(
+                        (acc, review) => acc + (review.rating || 0),
+                        0
+                      ) || 0;
+                    const count = p.reviews?.length || 0;
+                    return count > 0
+                      ? `${(total / count).toFixed(1)} (${count})`
+                      : "Belum ada ulasan";
+                  })()}
                 </span>
               </div>
               <p className="font-bold text-base">

@@ -276,6 +276,11 @@ export default function EditProductPage() {
     return sku;
   };
 
+  const isUpdating =
+    updateProductMutation.isPending ||
+    updateProductVariantsMutation.isPending ||
+    attachments.some((a) => a.isUploading);
+
   return (
     <div className="p-0 md:p-8 space-y-6">
       <div className="max-md:p-4">
@@ -564,14 +569,10 @@ export default function EditProductPage() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={
-                      updateProductMutation.isPending ||
-                      updateProductVariantsMutation.isPending ||
-                      attachments.some((a) => a.isUploading)
-                    }
+                    disabled={isUpdating}
                   >
                     <Save />
-                    Simpan Perubahan
+                    {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
                   </Button>
                   <DeleteProductDialog productId={productId as string} />
                 </CardContent>

@@ -20,6 +20,13 @@ const swaggerOptions = {
       },
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
       schemas: {
         Product: {
           type: "object",
@@ -316,10 +323,14 @@ const swaggerOptions = {
               description: "Order status",
               example: "pending",
               enum: [
+                "ready",
                 "pending",
-                "confirmed",
+                "processing",
                 "shipped",
+                "in_transit",
                 "delivered",
+                "failed",
+                "returned",
                 "cancelled",
               ],
             },
@@ -370,6 +381,328 @@ const swaggerOptions = {
             },
           },
         },
+        OrderItem: {
+          type: "object",
+          properties: {
+            id: { type: "integer", description: "Order item ID" },
+            order_id: { type: "string", format: "uuid" },
+            variant_id: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              description: "Related product variant ID",
+            },
+            sku: {
+              type: "string",
+              nullable: true,
+              description: "SKU at the time of purchase",
+            },
+            title: {
+              type: "string",
+              nullable: true,
+              description: "Product title at the time of purchase",
+            },
+            unit_price_cents: {
+              type: "integer",
+              format: "int64",
+              description: "Unit price (cents) captured at checkout",
+            },
+            quantity: { type: "integer", description: "Quantity purchased" },
+            total_price_cents: {
+              type: "integer",
+              format: "int64",
+              description: "Line total in cents",
+            },
+          },
+        },
+        OrderItemWithVariant: {
+          allOf: [
+            { $ref: "#/components/schemas/OrderItem" },
+            {
+              type: "object",
+              properties: {
+                variant: {
+                  allOf: [
+                    { $ref: "#/components/schemas/ProductVariant" },
+                    {
+                      type: "object",
+                      properties: {
+                        product: { $ref: "#/components/schemas/Product" },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        Address: {
+          type: "object",
+          properties: {
+            id: { type: "integer", description: "Address ID" },
+            user_id: { type: "string", description: "Owner user ID" },
+            recipient_name: { type: "string", description: "Recipient name" },
+            label: {
+              type: "string",
+              nullable: true,
+              description: "Label for the address (Home, Office, etc.)",
+            },
+            address_line1: {
+              type: "string",
+              nullable: true,
+              description: "Street address line 1",
+            },
+            address_line2: {
+              type: "string",
+              nullable: true,
+              description: "Street address line 2",
+            },
+            city: { type: "string", nullable: true },
+            province: { type: "string", nullable: true },
+            postal_code: { type: "string", nullable: true },
+            country: { type: "string", nullable: true },
+            phone: { type: "string", nullable: true },
+            lat: { type: "number", nullable: true },
+            lng: { type: "number", nullable: true },
+            is_default: {
+              type: "boolean",
+              description: "Whether this address is the default for the user",
+            },
+          },
+        },
+        Payment: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            order_id: { type: "string", format: "uuid" },
+            provider: { type: "string", description: "Payment provider" },
+            provider_payment_id: {
+              type: "string",
+              nullable: true,
+              description: "Provider payment reference / token",
+            },
+            status: {
+              type: "string",
+              nullable: true,
+              description: "Payment status reported by provider",
+            },
+            amount_cents: {
+              type: "integer",
+              format: "int64",
+              description: "Amount in cents",
+            },
+            currency: {
+              type: "string",
+              description: "Currency code",
+              example: "IDR",
+            },
+            paid_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              description: "Time payment was captured",
+            },
+          },
+        },
+        ShipmentMethod: {
+          type: "object",
+          properties: {
+            id: { type: "integer", description: "Shipment method ID" },
+            name: { type: "string", nullable: true },
+            carrier_code: { type: "string", nullable: true },
+          },
+        },
+        Shipment: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            order_id: { type: "string", format: "uuid" },
+            shipment_method_id: {
+              type: "integer",
+              nullable: true,
+              description: "Reference to shipment method",
+            },
+            tracking_number: {
+              type: "string",
+              nullable: true,
+              description: "Tracking number from carrier",
+            },
+            status: {
+              type: "string",
+              description: "Shipment status",
+              enum: [
+                "ready",
+                "pending",
+                "processing",
+                "shipped",
+                "in_transit",
+                "delivered",
+                "failed",
+                "returned",
+                "cancelled",
+              ],
+            },
+            shipped_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              description: "Timestamp when package shipped",
+            },
+            delivered_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              description: "Timestamp when package delivered",
+            },
+            shipment_method: {
+              $ref: "#/components/schemas/ShipmentMethod",
+            },
+          },
+        },
+        Return: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            order_id: { type: "string", format: "uuid", nullable: true },
+            user_id: { type: "string", nullable: true },
+            reason: { type: "string", nullable: true },
+            status: {
+              type: "string",
+              description: "Return request status",
+              example: "requested",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              description: "Return request created at",
+            },
+          },
+        },
+        MidtransSnapTransaction: {
+          type: "object",
+          properties: {
+            token: { type: "string", description: "Snap token" },
+            redirect_url: {
+              type: "string",
+              format: "uri",
+              description: "URL to redirect user to Midtrans payment page",
+            },
+          },
+        },
+        PaymentStatus: {
+          type: "object",
+          properties: {
+            status_code: { type: "string", example: "200" },
+            status_message: {
+              type: "string",
+              example: "Success, transaction found",
+            },
+            transaction_id: { type: "string" },
+            order_id: { type: "string" },
+            gross_amount: {
+              type: "string",
+              description: "Gross amount in currency units",
+            },
+            transaction_status: {
+              type: "string",
+              example: "settlement",
+            },
+            fraud_status: { type: "string", example: "accept" },
+            payment_type: { type: "string", example: "gopay" },
+            currency: { type: "string", example: "IDR" },
+            transaction_time: {
+              type: "string",
+              example: "2024-11-25 10:15:30",
+            },
+          },
+          additionalProperties: true,
+        },
+        OrderCreationResult: {
+          type: "object",
+          properties: {
+            order: {
+              allOf: [
+                { $ref: "#/components/schemas/Order" },
+                {
+                  type: "object",
+                  properties: {
+                    order_items: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/OrderItem" },
+                    },
+                  },
+                },
+              ],
+            },
+            payment: {
+              type: "object",
+              properties: {
+                provider_payment_id: {
+                  type: "string",
+                  description: "Snap token used to complete payment",
+                },
+              },
+            },
+            snap: { $ref: "#/components/schemas/MidtransSnapTransaction" },
+          },
+        },
+        OrderWithRelations: {
+          allOf: [
+            { $ref: "#/components/schemas/Order" },
+            {
+              type: "object",
+              properties: {
+                order_items: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/OrderItemWithVariant" },
+                },
+                payments: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Payment" },
+                },
+                shipments: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Shipment" },
+                },
+                address: { $ref: "#/components/schemas/Address" },
+                user: { $ref: "#/components/schemas/User" },
+                returns: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Return" },
+                },
+              },
+            },
+          ],
+        },
+        Review: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            user_id: { type: "string" },
+            product_id: { type: "string", format: "uuid" },
+            rating: { type: "integer", example: 5 },
+            title: { type: "string", nullable: true },
+            body: { type: "string", nullable: true },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              description: "When the review was created",
+            },
+          },
+        },
+        ProductFilterOptions: {
+          type: "object",
+          properties: {
+            colors: {
+              type: "array",
+              items: { type: "string" },
+            },
+            sizes: {
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+        },
       },
       parameters: {
         ProductId: {
@@ -380,7 +713,7 @@ const swaggerOptions = {
           description: "Product ID",
         },
         ProductImageId: {
-          name: "id",
+          name: "imageId",
           in: "path",
           required: true,
           schema: { type: "integer" },
@@ -423,6 +756,53 @@ const swaggerOptions = {
           in: "query",
           schema: { type: "string" },
           description: "Filter by category slug",
+        },
+        OrderId: {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+          description: "Order ID",
+        },
+        ShipmentId: {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+          description: "Shipment ID",
+        },
+        CustomerId: {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+          description: "Customer ID",
+        },
+        OrderStatusQuery: {
+          name: "status",
+          in: "query",
+          schema: {
+            type: "string",
+            enum: [
+              "ready",
+              "pending",
+              "processing",
+              "shipped",
+              "in_transit",
+              "delivered",
+              "failed",
+              "returned",
+              "cancelled",
+            ],
+          },
+          description: "Filter orders by current status",
+        },
+        AddressId: {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer" },
+          description: "Address ID",
         },
       },
     },

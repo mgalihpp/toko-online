@@ -80,8 +80,15 @@ export const createProductImagesSchema = z.array(
     alt: z.string().optional(),
     sort_order: z.number(),
     key: z.string(),
-  }),
+  })
 );
+
+export const createProductReviewSchema = z.object({
+  product_id: z.uuid(),
+  rating: z.number().min(1, "Silakan beri rating").max(5),
+  title: z.string().optional(),
+  body: z.string().min(10, "Ulasan minimal 10 karakter").optional(),
+});
 
 export type ParamsProductId = z.infer<typeof productIdParams>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -94,3 +101,6 @@ export type CreateProductImagesInput = z.infer<
   typeof createProductImagesSchema
 >;
 export type ListProductQueryInput = z.infer<typeof listProductsQuery>;
+export type CreateProductReviewInput = z.infer<
+  typeof createProductReviewSchema
+>;

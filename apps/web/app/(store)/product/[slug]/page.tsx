@@ -25,11 +25,9 @@ export default async function ProductPage({ params }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 lg:gap-16">
           <ProductGallery images={product.product_images} />
 
-          <div className="space-y-2">
-            <ProductInfo product={product} />
-            <ProductTabs />
-          </div>
+          <ProductInfo product={product} />
         </div>
+        <ProductTabs product={product} />
         <RelatedProducts productId={product.id} />
       </section>
     </main>

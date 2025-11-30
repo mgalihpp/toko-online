@@ -12,6 +12,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 import { Card } from "@repo/ui/components/card";
 import { Separator } from "@repo/ui/components/separator";
+import { Skeleton } from "@repo/ui/components/skeleton";
 import { AlertCircle, Info } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,8 +42,14 @@ const scriptId = "midtrans-snap-script";
 export default function CheckoutPage() {
   const router = useRouter();
   const { data } = authClient.useSession();
-  const { items, totalPrice, clearCart } = useCartStore();
-  const { data: addresses = [] } = useAddresses();
+  const {
+    items,
+    loading: isCartLoading,
+    totalPrice,
+    clearCart,
+  } = useCartStore();
+  const { data: addresses = [], isLoading: isAddressesLoading } =
+    useAddresses();
   const orderMutation = useCreateOrder();
   const [runUpdatePaymentStatusAction] = useServerAction(updatePaymentStatus);
   const [runCancelOrderAction] = useServerAction(cancelOrder);
@@ -208,7 +215,52 @@ export default function CheckoutPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-2 py-8">
-        {items.length === 0 ? (
+        {isAddressesLoading || isCartLoading ? (
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="p-6 space-y-4">
+                <Skeleton className="h-5 w-40" />
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-1/2" />
+                </div>
+              </Card>
+
+              <Separator className="my-2 sm:my-0" />
+
+              <Card className="p-6 space-y-4">
+                <Skeleton className="h-5 w-48" />
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </Card>
+
+              <Separator className="my-2 sm:my-0" />
+
+              <Card className="p-6 space-y-4">
+                <Skeleton className="h-5 w-52" />
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-4 w-56" />
+              </Card>
+            </div>
+
+            <div>
+              <Card className="p-6 space-y-4">
+                <Skeleton className="h-6 w-32" />
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+              </Card>
+            </div>
+          </div>
+        ) : items.length === 0 ? (
           // Empty Cart State
           <Card className="p-12 text-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">

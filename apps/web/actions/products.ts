@@ -24,7 +24,20 @@ export const getProductBySlug = async (slug: string) => {
           },
         },
         product_images: true,
-        reviews: true,
+        reviews: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: {
+            created_at: "desc",
+          },
+        },
       },
     });
 

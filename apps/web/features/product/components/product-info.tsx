@@ -1,5 +1,7 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
 "use client";
 
+import type { Reviews } from "@repo/db";
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +19,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 import { Separator } from "@repo/ui/components/separator";
 import { Check, RefreshCw, Shield, Star, Truck, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { addItemToCart } from "@/actions/cart";
 import { formatCurrency } from "@/features/admin/utils";
@@ -36,7 +38,7 @@ type ProductInfoProps = {
   product: ProductWithRelations;
 };
 
-const colorStyle = {
+const colorStyle: Record<string, string> = {
   Grey: "bg-gray-400",
   Black: "bg-black",
   White: "bg-white border border-border",
@@ -45,71 +47,119 @@ const colorStyle = {
   Blue: "bg-blue-200",
 };
 
+const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const { addToCart, items } = useCartStore();
-  const opts_value = parseOptions(product.product_variants[0]?.option_values);
-  const [selectedSize, setSelectedSize] = useState(opts_value.size ?? "S");
+
+  // Initial selected size & color dari variant pertama (kalau ada)
+  const initialOptionValues = parseOptions(
+    product.product_variants[0]?.option_values
+  );
+
+  const [selectedSize, setSelectedSize] = useState(
+    initialOptionValues?.size ?? "S"
+  );
   const [selectedColor, setSelectedColor] = useState(
-    opts_value?.color ?? "default"
+    initialOptionValues?.color ?? "default"
   );
   const [quantity, setQuantity] = useState(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [runAddItemToCartAction, isAddItemToCartPending] =
     useServerAction(addItemToCart);
 
-  const inWishlist = false;
+  // -------------------------
+  // Derived data
+  // -------------------------
+
+  const sizes = useMemo(() => {
+    const sizeSet = new Set<string>();
+
+    for (const variant of product.product_variants) {
+      const options = parseOptions(variant.option_values);
+      if (options?.size) sizeSet.add(options.size);
+    }
+
+    return Array.from(sizeSet).sort(
+      (a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b)
+    );
+  }, [product]);
+
+  const colors = useMemo(() => {
+    const colorSet = new Set<string>();
+
+    for (const variant of product.product_variants) {
+      const options = parseOptions(variant.option_values);
+      if (options?.color) colorSet.add(options.color);
+    }
+
+    return Array.from(colorSet);
+  }, [product]);
 
   const selectedVariant = findVariant(product, selectedSize, selectedColor);
+
   const availableStock = selectedVariant ? getVariantStock(selectedVariant) : 0;
-  const inStock = availableStock > 0;
+
   const cartItem = items.find(
     (i) => i.id === product.id && i.variant_id === selectedVariant?.id
   );
   const inCart = !!cartItem;
   const cartQuantity = cartItem?.quantity ?? 0;
-  const canAddMore = quantity < availableStock - cartQuantity;
 
-  const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+  // Sisa stok yang masih boleh ditambah (total stok - yang sudah ada di cart)
+  const remainingStock = Math.max(availableStock - cartQuantity, 0);
+  const inStock = remainingStock > 0;
+  const canAddMore = remainingStock > 0;
 
-  const sizes = [
-    ...new Set(
-      product.product_variants
-        .map((v) => parseOptions(v.option_values)?.size)
-        .filter(Boolean)
-    ),
-  ].sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b));
+  const parsedOptionValues = useMemo(
+    () =>
+      selectedVariant
+        ? parseOptions(selectedVariant.option_values)
+        : initialOptionValues,
+    [selectedVariant, initialOptionValues]
+  );
 
-  const colors = [
-    ...new Set(
-      product.product_variants
-        .map((v) => parseOptions(v.option_values)?.color)
-        .filter(Boolean)
-    ),
-  ];
-
-  const parsedOptionValues = selectedVariant
-    ? parseOptions(selectedVariant.option_values)
-    : null;
+  // -------------------------
+  // Handlers
+  // -------------------------
 
   const handleAddToCart = async () => {
+    if (!selectedVariant) {
+      toast.error("Pilih ukuran dan warna terlebih dahulu.");
+      return;
+    }
+
+    if (!inStock || !canAddMore) {
+      toast.error("Stok produk tidak mencukupi.");
+      return;
+    }
+
+    const safeQuantity = Math.min(quantity, remainingStock || 1);
+
     const cart_item = await runAddItemToCartAction({
-      variant_id: selectedVariant?.id as string,
-      quantity: quantity,
+      variant_id: selectedVariant.id as string,
+      quantity: safeQuantity,
     });
+
+    if (!cart_item) {
+      toast.error("Gagal menambahkan ke keranjang.");
+      return;
+    }
+
     addToCart({
       id: product.id,
-      cart_item_id: cart_item?.id as number,
-      variant_id: selectedVariant?.id as string,
+      cart_item_id: cart_item.id as number,
+      variant_id: selectedVariant.id as string,
       image: product.product_images?.[0]?.url as string,
       name: product.title,
-      quantity: quantity,
+      quantity: safeQuantity,
       price:
         Number(product.price_cents) +
-        Number(selectedVariant?.additional_price_cents),
+        Number(selectedVariant.additional_price_cents),
       size: selectedSize,
       color: selectedColor,
       storage:
-        selectedVariant?.inventory[0]?.stock_quantity.toString() ?? undefined,
+        selectedVariant.inventory?.[0]?.stock_quantity?.toString() ?? undefined,
     });
 
     toast.success("Ditambahkan ke Keranjang");
@@ -118,6 +168,37 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   // -------------------------
   // Render
   // -------------------------
+
+  const renderStars = (reviews: Reviews[]) => {
+    const total =
+      reviews?.reduce((acc, review) => acc + (review.rating || 0), 0) || 0;
+    const count = reviews?.length || 0;
+    const avgRating = count > 0 ? total / count : 0;
+    const fullStars = Math.floor(avgRating);
+    const hasHalfStar = avgRating % 1 >= 0.5;
+
+    return (
+      <>
+        {Array(fullStars)
+          .fill(0)
+          .map((_, i) => (
+            <Star
+              key={`full-${i}`}
+              className="w-3 h-3 fill-current text-yellow-500"
+            />
+          ))}
+        {hasHalfStar && (
+          <Star key="half" className="w-3 h-3 fill-current text-yellow-400" />
+        )}
+        {Array(5 - fullStars - (hasHalfStar ? 1 : 0))
+          .fill(0)
+          .map((_, i) => (
+            <Star key={`empty-${i}`} className="w-3 h-3 text-gray-300" />
+          ))}
+      </>
+    );
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -154,17 +235,16 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star key={star} className="w-4 h-4 fill-current" />
-            ))}
-          </div>
+          <div className="flex gap-1">{renderStars(product.reviews)}</div>
 
           <span className="text-sm">
             <span className="font-semibold">
               {product.reviews.reduce((a, r) => a + r.rating, 0)}
             </span>
-            <span className="text-muted-foreground"> (847 reviews)</span>
+            <span className="text-muted-foreground">
+              {" "}
+              ({product.reviews.length} Ulasan)
+            </span>
           </span>
         </div>
 
@@ -192,13 +272,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       {sizes.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <p className="text-sm font-semibold">Size</p>
+            <p className="text-sm font-semibold">Ukuran</p>
             <button
               type="button"
               onClick={() => setSizeGuideOpen(true)}
               className="text-xs underline hover:no-underline"
             >
-              Size Guide
+              Panduan Ukuran
             </button>
           </div>
 
@@ -208,6 +288,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
                 type="button"
                 key={size}
                 onClick={() => setSelectedSize(size)}
+                aria-pressed={size === selectedSize}
                 className={`py-3 text-sm font-medium border transition-all ${
                   size === selectedSize
                     ? "border-foreground bg-foreground text-background"
@@ -224,7 +305,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       {/* Color Selection */}
       {colors.length > 0 && (
         <div className="space-y-4">
-          <p className="text-sm font-semibold">Color</p>
+          <p className="text-sm font-semibold">Warna</p>
 
           <div className="flex gap-3">
             {colors.map((color) => (
@@ -233,9 +314,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
                 key={color}
                 onClick={() => setSelectedColor(color)}
                 aria-label={color}
+                aria-pressed={selectedColor === color}
                 className={`
                   relative w-10 h-10 rounded-full transition-all
-                  ${colorStyle[color as keyof typeof colorStyle] || "bg-gray-300"}
+                  ${
+                    colorStyle[color as keyof typeof colorStyle] ||
+                    "bg-gray-300"
+                  }
                   ${
                     selectedColor === color
                       ? "ring-2 ring-foreground ring-offset-2"
@@ -254,13 +339,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 
       {/* Quantity */}
       <div className="space-y-4">
-        <p className="text-sm font-semibold">Quantity</p>
+        <p className="text-sm font-semibold">Kuantitas</p>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center border border-border">
             <button
               type="button"
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
               className="px-4 py-2 hover:bg-secondary"
             >
               -
@@ -273,10 +358,10 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
             <button
               type="button"
               onClick={() =>
-                setQuantity(Math.min(availableStock, quantity + 1))
+                setQuantity((prev) => Math.min(prev + 1, remainingStock || 1))
               }
-              disabled={quantity >= availableStock}
-              className="px-4 py-2 hover:bg-secondary"
+              disabled={!inStock || quantity >= remainingStock}
+              className="px-4 py-2 hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
             >
               +
             </button>
@@ -292,7 +377,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           size="lg"
           className="w-full h-14 text-base font-semibold"
           onClick={handleAddToCart}
-          disabled={!inStock || !canAddMore || isAddItemToCartPending}
+          disabled={!canAddMore || isAddItemToCartPending}
         >
           {isAddItemToCartPending
             ? "Menambahkan..."
@@ -307,9 +392,9 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           size="lg"
           variant="outline"
           className="w-full h-14 text-base font-semibold border-2 hover:bg-foreground hover:text-background"
-          disabled={!inStock || !canAddMore}
+          disabled={!canAddMore}
         >
-          Buy Now
+          Beli Sekarang
         </Button>
       </div>
 
@@ -318,7 +403,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       {/* Accordion */}
       <Accordion type="single" collapsible className="w-full">
         <AccordionItem value="description">
-          <AccordionTrigger>Description</AccordionTrigger>
+          <AccordionTrigger>Deskripsi</AccordionTrigger>
           <AccordionContent>
             <p className="text-base leading-relaxed text-muted-foreground whitespace-pre-line">
               {product.description}
@@ -333,9 +418,9 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               <div className="flex gap-3 items-start">
                 <Truck className="w-5 h-5 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Free Shipping</p>
+                  <p className="text-sm font-medium">Gratis Pengiriman</p>
                   <p className="text-xs text-muted-foreground">
-                    On orders over Rp 500.000
+                    Jika pesanan lebih dari Rp 500.000
                   </p>
                 </div>
               </div>
@@ -343,9 +428,9 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               <div className="flex gap-3 items-start">
                 <RefreshCw className="w-5 h-5 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">30-Day Returns</p>
+                  <p className="text-sm font-medium">Pengembalian 30 Hari</p>
                   <p className="text-xs text-muted-foreground">
-                    Hassle-free return policy
+                    Kebijakan pengembalian tanpa repot
                   </p>
                 </div>
               </div>
@@ -353,9 +438,9 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               <div className="flex gap-3 items-start">
                 <Shield className="w-5 h-5 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Quality Guarantee</p>
+                  <p className="text-sm font-medium">Jaminan Kualitas</p>
                   <p className="text-xs text-muted-foreground">
-                    Premium materials & craftsmanship
+                    Bahan dan pengerjaan premium
                   </p>
                 </div>
               </div>

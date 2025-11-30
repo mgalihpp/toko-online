@@ -1,6 +1,8 @@
-import type { Prisma, Product } from "@repo/db";
+import type { Product } from "@repo/db";
+import { paramsIdSchema } from "@repo/schema";
 import {
   createProductImagesSchema,
+  createProductReviewSchema,
   createProductSchema,
   imageIdParams,
   listProductsQuery,
@@ -123,6 +125,40 @@ export class ProductController extends BaseController<Product, ProductService> {
     return new AppResponse({
       res,
       data: filters,
+    });
+  });
+
+  createProductReview = asyncHandler(async (req: Request, res: Response) => {
+    const parsed = createProductReviewSchema.parse(req.body);
+    const userId = req.user?.id as string;
+
+    const newReview = await this.service.createReview(userId, parsed);
+
+    return new AppResponse({
+      res,
+      data: newReview,
+    });
+  });
+
+  deleteProductReview = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = paramsIdSchema.parse(req.params);
+
+    const deletedReview = await this.service.deleteReview(id);
+
+    return new AppResponse({
+      res,
+      data: deletedReview,
+    });
+  });
+
+  getProductReviews = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = productIdParams.parse(req.params);
+
+    const reviews = await this.service.getProductReviews(id);
+
+    return new AppResponse({
+      res,
+      data: reviews,
     });
   });
 }

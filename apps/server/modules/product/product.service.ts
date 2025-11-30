@@ -1,9 +1,11 @@
 import type { Prisma, Product } from "@repo/db";
 import type {
   CreateProductImagesInput,
+  CreateProductReviewInput,
   ListProductQueryInput,
   UpdateProductInput,
 } from "@repo/schema/productSchema";
+import { HTTPSTATUS } from "@/configs/http";
 import { AppError } from "@/utils/appError";
 import { BaseService } from "../service";
 import { ProductVariantsService } from "../variant/variant.service";
@@ -24,6 +26,7 @@ export class ProductService extends BaseService<Product, "product"> {
           category: true,
           product_images: { orderBy: { sort_order: "asc" } },
           product_variants: { include: { inventory: true } },
+          reviews: true,
         },
       });
     }
@@ -95,6 +98,7 @@ export class ProductService extends BaseService<Product, "product"> {
         category: true,
         product_images: { orderBy: { sort_order: "asc" } },
         product_variants: { include: { inventory: true } },
+        reviews: true,
       },
       skip,
       take: limit,
@@ -182,6 +186,7 @@ export class ProductService extends BaseService<Product, "product"> {
           include: { inventory: true },
           take: 1,
         },
+        reviews: true,
       },
       orderBy: [
         // { sold_count: "desc" }, // prioritas yang laris (kalau ada field ini)
@@ -260,5 +265,61 @@ export class ProductService extends BaseService<Product, "product"> {
     const colors = await this.variantService.getAvailableColors();
     const sizes = await this.variantService.getAvailableSizes();
     return { colors, sizes };
+  }
+
+  async createReview(user_id: string, data: CreateProductReviewInput) {
+    const existingReview = await this.db.reviews.findFirst({
+      where: {
+        user_id,
+        product_id: data.product_id,
+      },
+      select: { id: true },
+    });
+
+    if (existingReview) {
+      throw AppError.httpException(
+        "Kamu sudah memberi ulasan untuk produk ini",
+        HTTPSTATUS.CONFLICT
+      );
+    }
+
+    const newReview = await this.db.reviews.create({
+      data: {
+        user_id,
+        ...data,
+      },
+    });
+
+    return newReview;
+  }
+
+  async deleteReview(id: string) {
+    const isReviewExits = await this.db.reviews.findFirst({
+      where: {
+        id,
+      },
+    });
+
+    if (!isReviewExits) {
+      throw AppError.notFound("Review is not found");
+    }
+
+    const deletedReview = await this.db.reviews.delete({
+      where: {
+        id: isReviewExits.id,
+      },
+    });
+
+    return deletedReview;
+  }
+
+  async getProductReviews(product_id: string) {
+    const reviews = await this.db.reviews.findMany({
+      where: {
+        product_id,
+      },
+    });
+
+    return reviews;
   }
 }

@@ -35,6 +35,16 @@ export class OrderService extends BaseService<Orders, "orders"> {
                 product: {
                   include: {
                     product_images: true,
+                    reviews: {
+                      where: userId ? { user_id: userId } : undefined,
+                      select: {
+                        id: true,
+                        user_id: true,
+                        rating: true,
+                        body: true,
+                        created_at: true,
+                      },
+                    },
                   },
                 },
               },
@@ -61,6 +71,15 @@ export class OrderService extends BaseService<Orders, "orders"> {
                 product: {
                   include: {
                     product_images: true,
+                    reviews: {
+                      select: {
+                        id: true,
+                        user_id: true,
+                        rating: true,
+                        body: true,
+                        created_at: true,
+                      },
+                    },
                   },
                 },
               },
