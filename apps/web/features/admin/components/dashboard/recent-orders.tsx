@@ -8,80 +8,123 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import { Skeleton } from "@repo/ui/components/skeleton";
+import { formatDistanceToNow } from "date-fns";
+import { id } from "date-fns/locale";
+import Link from "next/link";
+import { useRecentOrders } from "@/features/admin/queries/useDashboardQuery";
+import { formatCurrency } from "@/features/admin/utils";
 
-const recentOrders = [
-  {
-    id: "ORD-001",
-    customer: "John Doe",
-    amount: "$234.50",
-    status: "Delivered",
-    date: "2025-01-20",
+const statusConfig: Record<string, { label: string; className: string }> = {
+  pending: { label: "Menunggu", className: "bg-gray-100 text-gray-800" },
+  processing: { label: "Diproses", className: "bg-yellow-100 text-yellow-800" },
+  shipped: { label: "Dikirim", className: "bg-blue-100 text-blue-800" },
+  delivered: {
+    label: "Terkirim",
+    className: "bg-emerald-100 text-emerald-800",
   },
-  {
-    id: "ORD-002",
-    customer: "Jane Smith",
-    amount: "$567.80",
-    status: "Shipped",
-    date: "2025-01-19",
-  },
-  {
-    id: "ORD-003",
-    customer: "Bob Johnson",
-    amount: "$123.45",
-    status: "Processing",
-    date: "2025-01-18",
-  },
-  {
-    id: "ORD-004",
-    customer: "Alice Brown",
-    amount: "$890.12",
-    status: "Pending",
-    date: "2025-01-17",
-  },
-];
-
-const statusColors = {
-  Delivered: "bg-emerald-100 text-emerald-800",
-  Shipped: "bg-blue-100 text-blue-800",
-  Processing: "bg-yellow-100 text-yellow-800",
-  Pending: "bg-gray-100 text-gray-800",
+  completed: { label: "Selesai", className: "bg-emerald-100 text-emerald-800" },
+  cancelled: { label: "Dibatalkan", className: "bg-red-100 text-red-800" },
 };
 
 export function RecentOrders() {
+  const { data: orders, isLoading, isError } = useRecentOrders(5);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-9 w-24" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <div className="text-right space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Pesanan Terbaru</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground py-8">
+            Gagal memuat data pesanan
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Orders</CardTitle>
-        <Button variant="outline" size="sm">
-          View All
+        <CardTitle>Pesanan Terbaru</CardTitle>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard/orders">Lihat Semua</Link>
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {recentOrders.map((order) => (
-            <div
-              key={order.id}
-              className="flex items-center justify-between p-3 border rounded-lg"
-            >
-              <div>
-                <p className="font-medium text-sm">{order.id}</p>
-                <p className="text-xs text-muted-foreground">
-                  {order.customer}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium text-sm">{order.amount}</p>
-                <Badge
-                  className={
-                    statusColors[order.status as keyof typeof statusColors]
-                  }
+        {!orders || orders.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            Belum ada pesanan
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const status = statusConfig[order.status] || {
+                label: order.status,
+                className: "bg-gray-100 text-gray-800",
+              };
+
+              return (
+                <Link
+                  key={order.id}
+                  href={`/dashboard/orders/${order.id}`}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
                 >
-                  {order.status}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div>
+                    <p className="font-medium text-sm">#{order.id}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.customer}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(order.date), {
+                        addSuffix: true,
+                        locale: id,
+                      })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-sm">
+                      {formatCurrency(order.amount)}
+                    </p>
+                    <Badge className={status.className}>{status.label}</Badge>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -44,7 +44,7 @@ const FilterCategory: React.FC<FilterCategoryProps> = ({
                       "text-gray-900": filter.category === null,
                       "text-grey-3 hover:text-gray-900 hover:text-opacity-75":
                         filter.category !== null,
-                    }
+                    },
                   )}
                   onClick={() => {
                     setFilter((prev) => ({
@@ -66,7 +66,7 @@ const FilterCategory: React.FC<FilterCategoryProps> = ({
                         "text-gray-900": filter.category === category.id,
                         "text-grey-3 hover:text-gray-900 hover:text-opacity-75":
                           filter.category !== category.id,
-                      }
+                      },
                     )}
                     onClick={() => {
                       setFilter((prev) => ({

@@ -45,11 +45,11 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
 import { DeleteProductDialog } from "@/features/admin/components/products/delete-product-dialog";
-import { formatCurrency } from "@/features/admin/utils";
 import { useProductMediaUpload } from "@/features/upload/hooks/useProductMediaUpload";
 import { api } from "@/lib/api";
 import type { VariantCombination, VariantOption } from "@/types/index";
 import { CategoryCombobox } from "../../_components/category-combobox";
+import { CurrencyInput } from "../../_components/currency-input";
 import { ProductImageUpload } from "../../_components/product-image-upload";
 import { ProductVariantsSection } from "../../_components/product-variant-sections";
 
@@ -62,7 +62,15 @@ export default function EditProductPage() {
   const [variantCombinations, setVariantCombinations] = useState<
     VariantCombination[]
   >([]);
-  const { attachments, setAttachments, isUploading } = useProductMediaUpload();
+  const {
+    attachments,
+    setAttachments,
+    isUploading,
+    startUpload,
+    removeAttachment,
+    reset,
+    uploadProgress,
+  } = useProductMediaUpload();
 
   const form = useForm<z.infer<typeof updateProductSchema>>({
     resolver: zodResolver(updateProductSchema),
@@ -99,15 +107,15 @@ export default function EditProductPage() {
 
       // --- DELETE old variants that no longer exist ---
       const variantsToDelete = existingVariants.filter(
-        (v) => !currentVariantIds.includes(v.id)
+        (v) => !currentVariantIds.includes(v.id),
       );
 
       await Promise.all(
         variantsToDelete.map((v) =>
           deleteProductVariantMutation.mutateAsync({
             variantId: v.id,
-          })
-        )
+          }),
+        ),
       );
 
       // --- UPDATE & CREATE ---
@@ -132,7 +140,7 @@ export default function EditProductPage() {
           } else {
             await createProductVariantsMutation.mutateAsync([variant]);
           }
-        })
+        }),
       );
 
       // filter hanya gambar baru (belum ada di database)
@@ -140,7 +148,7 @@ export default function EditProductPage() {
 
       if (newAttachments.length > 0) {
         const uniqueAttachments = Array.from(
-          new Map(newAttachments.map((a) => [a.key, a])).values()
+          new Map(newAttachments.map((a) => [a.key, a])).values(),
         );
 
         const imagesPayload = uniqueAttachments.map((a, index) => ({
@@ -214,7 +222,7 @@ export default function EditProductPage() {
           key: i.key,
           url: i.url,
           isUploading: false,
-        }))
+        })),
       );
     }
   }, [productData, form, setAttachments]);
@@ -245,7 +253,7 @@ export default function EditProductPage() {
       });
 
       const reconstructedOptions: VariantOption[] = Object.entries(
-        optionMap
+        optionMap,
       ).map(([name, values]) => ({
         name,
         values: Array.from(values),
@@ -385,16 +393,14 @@ export default function EditProductPage() {
                     <FormField
                       control={form.control}
                       name="category_id"
-                      render={() => (
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel className="block text-sm font-medium mb-2">
                             Kategori
                           </FormLabel>
                           <FormControl>
                             <CategoryCombobox
-                              defaultValue={form
-                                .getValues("category_id")
-                                ?.toString()}
+                              value={field.value ?? undefined}
                               onValueChange={(value) => {
                                 form.setValue("category_id", value);
                               }}
@@ -455,27 +461,15 @@ export default function EditProductPage() {
                           <FormLabel className="block text-sm font-medium mb-2">
                             Harga (IDR)
                           </FormLabel>
-                          <div className="relative">
-                            <FormControl>
-                              <Input
-                                {...field}
-                                onChange={(e) => {
-                                  form.setValue(
-                                    "price_cents",
-                                    Number(e.target.value)
-                                  );
-                                }}
-                                type="number"
-                                placeholder="0"
-                                step="1000"
-                                min={0}
-                                className="pr-20"
-                              />
-                            </FormControl>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                              {formatCurrency(field.value!)}
-                            </div>
-                          </div>
+                          <FormControl>
+                            <CurrencyInput
+                              value={field.value}
+                              onValueChange={(val) => {
+                                form.setValue("price_cents", val);
+                              }}
+                              placeholder="0"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -490,7 +484,7 @@ export default function EditProductPage() {
                         placeholder="0"
                         value={variantCombinations.reduce(
                           (total, v) => total + (v.stock_quantity ?? 0),
-                          0
+                          0,
                         )}
                         readOnly
                       />
@@ -508,7 +502,14 @@ export default function EditProductPage() {
               />
 
               {/* Product Images */}
-              <ProductImageUpload />
+              <ProductImageUpload
+                attachments={attachments}
+                isUploading={isUploading}
+                onUpload={startUpload}
+                onRemove={removeAttachment}
+                onReset={reset}
+                uploadProgress={uploadProgress}
+              />
             </div>
 
             {/* Sidebar */}

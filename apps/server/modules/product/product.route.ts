@@ -270,7 +270,7 @@ productRouter.get("/:id/reviews", productController.getProductReviews);
 productRouter.post(
   "/:id/reviews",
   authenticateMiddleware,
-  productController.createProductReview
+  productController.createProductReview,
 );
 
 /**
@@ -309,7 +309,7 @@ productRouter.post(
 productRouter.delete(
   "/review/:id",
   authenticateMiddleware,
-  productController.deleteProductReview
+  productController.deleteProductReview,
 );
 
 /**
@@ -412,7 +412,7 @@ productRouter.post("/images", requireAdmin, productController.createImages);
 productRouter.delete(
   "/images/:imageId",
   requireAdmin,
-  productController.deleteImage
+  productController.deleteImage,
 );
 
 /* ---------------------- PRODUCT VARIANTS ---------------------- */
@@ -466,7 +466,7 @@ productRouter.post("/variant", requireAdmin, productVariantsController.create);
 productRouter.put(
   "/variant/:variantId",
   requireAdmin,
-  productVariantsController.update
+  productVariantsController.update,
 );
 
 /**
@@ -484,7 +484,7 @@ productRouter.put(
 productRouter.delete(
   "/variant/:variantId",
   requireAdmin,
-  productVariantsController.delete
+  productVariantsController.delete,
 );
 
 export { productRouter };

@@ -13,6 +13,16 @@ import { useUserOrders } from "@/features/order/queries/useOrderQuery";
 import { authClient } from "@/lib/auth-client";
 import ReviewDialog from "./review-dialog";
 
+const statusLabels: Record<string, string> = {
+  pending: "Menunggu Pembayaran",
+  processing: "Diproses",
+  shipped: "Dikirim",
+  delivered: "Terkirim",
+  completed: "Selesai",
+  cancelled: "Dibatalkan",
+  cancel: "Dibatalkan",
+};
+
 export const OrdersSection = () => {
   const { data: sessionData } = authClient.useSession();
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -34,7 +44,7 @@ export const OrdersSection = () => {
           orderFilter === "processing" ||
           orderFilter === "shipping" ||
           orderFilter === "delivered") &&
-        (orderFilter === "all" || order.status === orderFilter)
+        (orderFilter === "all" || order.status === orderFilter),
     )
     ?.sort((a, b) => {
       const aIsCompleted = ["delivered", "completed"].includes(a.status);
@@ -53,7 +63,7 @@ export const OrdersSection = () => {
     ?.filter((order) => ["cancel", "cancelled"].includes(order.status))
     ?.sort(
       (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
 
   const filteredOrders =
@@ -121,7 +131,7 @@ export const OrdersSection = () => {
               order.status === "delivered" || order.status === "completed";
             const primaryProduct = order.order_items[0]?.variant?.product;
             const userReview = primaryProduct?.reviews?.find(
-              (review) => review.user_id === userId
+              (review) => review.user_id === userId,
             );
             const hasReview = !!userReview;
             const badgeColor =
@@ -139,7 +149,7 @@ export const OrdersSection = () => {
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <h3 className="font-bold text-lg">Order #{order.id}</h3>
+                    <h3 className="font-bold text-lg">Pesanan #{order.id}</h3>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(order.created_at), "dd MMMM yyyy HH:mm")}{" "}
                       WIB
@@ -147,7 +157,8 @@ export const OrdersSection = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className={badgeColor}>
-                      {order.status.replace(/_/g, " ")}
+                      {statusLabels[order.status] ||
+                        order.status.replace(/_/g, " ")}
                     </Badge>
                     <p className="font-semibold text-lg">
                       {formatCurrency(Number(order.total_cents))}

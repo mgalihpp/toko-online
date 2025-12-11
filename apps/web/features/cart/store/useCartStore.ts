@@ -21,7 +21,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       }
 
       const existingIndex = state.items.findIndex(
-        (i) => i.id === newItem.id && i.variant_id === newItem.variant_id
+        (i) => i.id === newItem.id && i.variant_id === newItem.variant_id,
       );
 
       if (existingIndex !== -1) {
@@ -30,7 +30,7 @@ export const useCartStore = create<CartState>((set, get) => ({
           items: state.items.map((item, idx) =>
             idx === existingIndex
               ? { ...item, quantity: item.quantity + newItem.quantity }
-              : item
+              : item,
           ),
         };
       }
@@ -44,7 +44,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   removeFromCart: (cart_item_id, variant_id) =>
     set((state) => ({
       items: state.items.filter(
-        (i) => !(i.cart_item_id === cart_item_id && i.variant_id === variant_id)
+        (i) =>
+          !(i.cart_item_id === cart_item_id && i.variant_id === variant_id),
       ),
     })),
 
@@ -54,7 +55,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         return {
           items: state.items.filter(
             (i) =>
-              !(i.cart_item_id === cart_item_id && i.variant_id === variant_id)
+              !(i.cart_item_id === cart_item_id && i.variant_id === variant_id),
           ),
         };
       }
@@ -62,7 +63,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         items: state.items.map((i) =>
           i.cart_item_id === cart_item_id && i.variant_id === variant_id
             ? { ...i, quantity }
-            : i
+            : i,
         ),
       };
     }),

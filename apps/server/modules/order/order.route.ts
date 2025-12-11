@@ -163,7 +163,7 @@ orderRouter.post(
   "/",
   authenticateMiddleware,
   idempotencyMiddleware,
-  orderController.create
+  orderController.create,
 );
 
 /**

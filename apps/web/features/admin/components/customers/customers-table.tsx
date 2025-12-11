@@ -130,7 +130,7 @@ export function CustomersTable() {
       cell: ({ row }) => {
         const total_spent = row.original.orders.reduce(
           (acc, order) => acc + Number(order.total_cents),
-          0
+          0,
         );
 
         return <span>{formatCurrency(total_spent)}</span>;

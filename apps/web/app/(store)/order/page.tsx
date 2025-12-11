@@ -87,7 +87,7 @@ const OrderDetails = () => {
   const [runCancelOrderAction] = useServerAction(cancelOrder);
 
   const [paymentDetail, setPaymentDetail] = useState<PaymentDetail | null>(
-    null
+    null,
   );
   const [hasAutoCancelled, setHasAutoCancelled] = useState(false);
 
@@ -110,7 +110,7 @@ const OrderDetails = () => {
     shippingStatus,
     payment?.paid_at,
     shipment?.shipped_at,
-    shipment?.delivered_at
+    shipment?.delivered_at,
   );
   const isPendingPayment = payment?.status === "pending";
   const isFailedPayment = payment?.status === "failed";
@@ -180,7 +180,7 @@ const OrderDetails = () => {
         : "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute(
       "data-client-key",
-      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string
+      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string,
     );
     script.async = true;
 
@@ -200,7 +200,7 @@ const OrderDetails = () => {
 
     if (!window.snap) {
       alert(
-        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman."
+        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman.",
       );
       return;
     }
@@ -277,7 +277,7 @@ const OrderDetails = () => {
         });
         await runCancelOrderAction(order_id);
         toast.error(
-          "Terjadi kendala pada pembayaran. Pesanan dibatalkan otomatis."
+          "Terjadi kendala pada pembayaran. Pesanan dibatalkan otomatis.",
         );
       } catch (error) {
         console.error("Failed to auto cancel order after server error", error);
@@ -648,7 +648,7 @@ function OrderItemsCard({ items, orderStatus, totals }: OrderItemsCardProps) {
                 {item.variant?.additional_price_cents &&
                 Number(item.variant.additional_price_cents) > 0
                   ? `(+${formatCurrency(
-                      Number(item.variant.additional_price_cents)
+                      Number(item.variant.additional_price_cents),
                     )})`
                   : ""}
               </p>
@@ -876,7 +876,7 @@ function buildOrderSteps(
   shippingStatus: string,
   paidAt?: string | Date | null,
   shippedAt?: string | Date | null,
-  deliveredAt?: string | Date | null
+  deliveredAt?: string | Date | null,
 ): OrderStep[] {
   return [
     {
@@ -895,7 +895,7 @@ function buildOrderSteps(
       icon: Package,
       label: "Sedang Diproses",
       active: ["processing", "shipped", "in_transit", "delivered"].includes(
-        shippingStatus
+        shippingStatus,
       ),
       date: paidAt,
     },

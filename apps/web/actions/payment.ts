@@ -130,6 +130,43 @@ export async function updatePaymentStatus({
       },
     });
 
+    // Create notifications based on payment status
+    if (["capture", "settlement"].includes(status)) {
+      // Notify user that payment is successful
+      await db.notifications.create({
+        data: {
+          user_id: order.user_id,
+          type: "ORDER_PAID",
+          payload: { order_id: order.id },
+        },
+      });
+
+      // Notify all admins about payment received
+      const admins = await db.user.findMany({
+        where: { role: "admin" },
+        select: { id: true },
+      });
+
+      if (admins.length > 0) {
+        await db.notifications.createMany({
+          data: admins.map((admin) => ({
+            user_id: admin.id,
+            type: "PAYMENT_RECEIVED",
+            payload: { order_id: order.id },
+          })),
+        });
+      }
+    } else if (status === "cancel" || status === "expire") {
+      // Notify user that order/payment is cancelled
+      await db.notifications.create({
+        data: {
+          user_id: order.user_id,
+          type: "ORDER_CANCELLED",
+          payload: { order_id: order.id },
+        },
+      });
+    }
+
     return payment;
   } catch (error) {
     console.error("[updatePaymentStatus] Error:", error);

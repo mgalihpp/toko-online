@@ -41,11 +41,11 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
-import { formatCurrency } from "@/features/admin/utils";
 import { useProductMediaUpload } from "@/features/upload/hooks/useProductMediaUpload";
 import { api } from "@/lib/api";
 import type { VariantCombination, VariantOption } from "@/types/index";
 import { CategoryCombobox } from "../_components/category-combobox";
+import { CurrencyInput } from "../_components/currency-input";
 import { ProductImageUpload } from "../_components/product-image-upload";
 import { ProductVariantsSection } from "../_components/product-variant-sections";
 
@@ -68,7 +68,19 @@ export default function CreateProductPage() {
   const [variantCombinations, setVariantCombinations] = useState<
     VariantCombination[]
   >([]);
-  const { attachments, setAttachments, isUploading } = useProductMediaUpload();
+  const {
+    attachments,
+    setAttachments,
+    isUploading,
+    startUpload,
+    removeAttachment,
+    reset,
+    uploadProgress,
+  } = useProductMediaUpload();
+
+  /* State untuk stok produk simple (tanpa varian) */
+
+  const [simpleStock, setSimpleStock] = useState(0);
 
   const createProductMutation = useMutation({
     mutationFn: api.product.create,
@@ -80,10 +92,23 @@ export default function CreateProductPage() {
       }));
 
       /**
-       * Ini akan dijalakan kalo varian yang dibuat lebih dari 0
+       * Jika ada varian, buat varian-varian tersebut.
+       * Jika TIDAK ada varian, buat 1 varian default (simple product) agar stok bisa disimpan.
        */
       if (variantCombinations.length > 0) {
         createProductVariantsMutation.mutate(variantsPayload);
+      } else {
+        // Buat default variant untuk simple product
+        createProductVariantsMutation.mutate([
+          {
+            product_id: data.id,
+            sku: form.getValues("sku"), // Gunakan SKU produk utama
+            price_cents: form.getValues("price_cents"),
+            stock_quantity: simpleStock,
+            option_values: {}, // Kosong karena tidak ada opsi varian
+            additional_price_cents: 0,
+          } as any, // Casting any karena tipe VariantCombination mungkin strict
+        ]);
       }
 
       // Ini akan dijalankan jika gambar yang diunggah lebih dari 0
@@ -151,6 +176,12 @@ export default function CreateProductPage() {
     sku += "-" + Math.floor(100 + Math.random() * 900).toString();
     return sku;
   };
+
+  // Hitung total stok dari varian jika ada
+  const totalVariantStock = variantCombinations.reduce(
+    (total, v) => total + (v.stock_quantity ?? 0),
+    0,
+  );
 
   return (
     <div className="p-0 md:p-8 space-y-6">
@@ -258,13 +289,14 @@ export default function CreateProductPage() {
                     <FormField
                       control={form.control}
                       name="category_id"
-                      render={() => (
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel className="block text-sm font-medium mb-2">
                             Kategori
                           </FormLabel>
                           <FormControl>
                             <CategoryCombobox
+                              value={field.value}
                               onValueChange={(value) => {
                                 form.setValue("category_id", value);
                               }}
@@ -325,45 +357,49 @@ export default function CreateProductPage() {
                           <FormLabel className="block text-sm font-medium mb-2">
                             Harga (IDR)
                           </FormLabel>
-                          <div className="relative">
-                            <FormControl>
-                              <Input
-                                {...field}
-                                onChange={(e) => {
-                                  form.setValue(
-                                    "price_cents",
-                                    Number(e.target.value),
-                                  );
-                                }}
-                                type="number"
-                                placeholder="0"
-                                step="1000"
-                                min={0}
-                                className="pr-20"
-                              />
-                            </FormControl>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                              {formatCurrency(field.value)}
-                            </div>
-                          </div>
+                          <FormControl>
+                            <CurrencyInput
+                              value={field.value}
+                              onValueChange={(val) => {
+                                form.setValue("price_cents", val);
+                              }}
+                              placeholder="0"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     <FormItem>
                       <FormLabel className="block text-sm font-medium mb-2">
-                        Stock Quantity
+                        Stok Produk
                       </FormLabel>
                       <Input
                         name="stock"
                         type="number"
                         placeholder="0"
-                        value={variantCombinations.reduce(
-                          (total, v) => total + (v.stock_quantity ?? 0),
-                          0,
-                        )}
-                        readOnly
+                        min={0}
+                        value={
+                          variantCombinations.length > 0
+                            ? totalVariantStock
+                            : simpleStock
+                        }
+                        onChange={(e) => {
+                          // Hanya izinkan edit jika tidak ada varian
+                          if (variantCombinations.length === 0) {
+                            setSimpleStock(Number(e.target.value));
+                          }
+                        }}
+                        readOnly={variantCombinations.length > 0}
+                        className={
+                          variantCombinations.length > 0 ? "bg-muted" : ""
+                        }
                       />
+                      {variantCombinations.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          *Stok dihitung otomatis dari total varian
+                        </p>
+                      )}
                     </FormItem>
                   </div>
                 </CardContent>
@@ -378,11 +414,18 @@ export default function CreateProductPage() {
               />
 
               {/* Product Images */}
-              <ProductImageUpload />
+              <ProductImageUpload
+                attachments={attachments}
+                isUploading={isUploading}
+                onUpload={startUpload}
+                onRemove={removeAttachment}
+                onReset={reset}
+                uploadProgress={uploadProgress}
+              />
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6 sticky top-4 h-screen">
+            <div className="space-y-6 sticky top-20 h-fit">
               <Card>
                 <CardHeader>
                   <CardTitle>Status</CardTitle>

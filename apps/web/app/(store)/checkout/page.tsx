@@ -56,7 +56,7 @@ export default function CheckoutPage() {
   const [runClearCartItemsAction] = useServerAction(ClearCartItems);
 
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
-    null
+    null,
   );
   const [selectedShippingId, setSelectedShippingId] = useState<number>(1);
 
@@ -75,7 +75,7 @@ export default function CheckoutPage() {
         : "https://app.sandbox.midtrans.com/snap/snap.js";
     script.setAttribute(
       "data-client-key",
-      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string
+      process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY as string,
     );
     script.async = true;
 
@@ -97,7 +97,7 @@ export default function CheckoutPage() {
 
   const subtotal = totalPrice();
   const selectedShipping = SHIPPING_METHODS.find(
-    (m) => m.id === selectedShippingId
+    (m) => m.id === selectedShippingId,
   );
   const shippingCost = selectedShipping?.basePrice || 0;
   const tax = subtotal * 0.1;
@@ -111,7 +111,7 @@ export default function CheckoutPage() {
 
     if (!window.snap) {
       alert(
-        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman."
+        "Sistem pembayaran sedang tidak tersedia. Silakan refresh halaman.",
       );
       return;
     }
@@ -170,7 +170,7 @@ export default function CheckoutPage() {
               },
             });
           },
-        }
+        },
       );
 
       // In real app, redirect to order confirmation

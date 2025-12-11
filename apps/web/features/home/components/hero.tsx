@@ -1,41 +1,97 @@
+"use client";
+
 import { Button } from "@repo/ui/components/button";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import Link from "next/link";
 
 export const Hero = () => {
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center bg-secondary border-b border-border">
-      <div className="container mx-auto px-4 lg:px-8 py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-            The Future of
+    <section className="relative min-h-screen flex items-center -mt-20">
+      {/* Full-width background image */}
+      <div className="absolute inset-0">
+        <img
+          src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80"
+          alt="Fashion Store"
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
+      </div>
+
+      {/* Content */}
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <div className="max-w-2xl">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-6">
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-sm text-white/90 font-medium">
+              New Collection 2024
+            </span>
+          </div>
+
+          {/* Main Headline */}
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-white leading-[0.9] mb-6">
+            Define
             <br />
-            Technology
+            Your
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200">
+              Style
+            </span>
           </h1>
-          <p className="text-xl lg:text-2xl text-muted-foreground max-w-2xl mx-auto">
-            Experience innovation at its finest. Discover premium electronics
-            designed for those who demand excellence.
+
+          {/* Subtitle */}
+          <p className="text-lg lg:text-xl text-white/70 mb-8 max-w-md leading-relaxed">
+            Temukan koleksi fashion premium yang membuat penampilanmu semakin
+            memukau. Kualitas terbaik, harga terjangkau.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+
+          {/* CTA Buttons */}
+          <div className="flex flex-wrap items-center gap-4 mb-12">
             <Button
               size="lg"
-              className="h-14 px-8 text-base font-semibold hover:bg-background border-2 border-foreground hover:text-foreground max-sm:w-full"
+              className="h-14 px-8 text-base font-semibold bg-white text-black hover:bg-white/90 rounded-full group"
               asChild
             >
-              <Link href="/shop">
-                Belanja Sekarang
-                <ChevronRight className="ml-2 h-5 w-5" />
+              <Link href="/products">
+                Explore Collection
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="h-14 px-8 text-base font-semibold border-2 border-foreground hover:bg-foreground hover:text-background max-sm:w-full"
+              className="h-14 px-8 text-base font-semibold bg-white/10 border-2 border-white text-white hover:bg-white hover:text-black rounded-full transition-colors"
             >
-              Jelajahi Produk
+              <Play className="mr-2 h-5 w-5 fill-current" />
+              Watch Lookbook
             </Button>
           </div>
+
+          {/* Product Stats */}
+          <div className="flex flex-wrap items-center gap-6 lg:gap-8 text-white/80">
+            <div>
+              <p className="text-2xl lg:text-3xl font-bold text-white">1000+</p>
+              <p className="text-xs lg:text-sm">Products</p>
+            </div>
+            <div className="w-px h-8 lg:h-10 bg-white/20" />
+            <div>
+              <p className="text-2xl lg:text-3xl font-bold text-white">50+</p>
+              <p className="text-xs lg:text-sm">Brands</p>
+            </div>
+            <div className="w-px h-8 lg:h-10 bg-white/20" />
+            <div>
+              <p className="text-2xl lg:text-3xl font-bold text-white">Free</p>
+              <p className="text-xs lg:text-sm">Shipping</p>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Scroll indicator - hidden on mobile */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-2 text-white/50">
+        <span className="text-xs uppercase tracking-widest">Scroll</span>
+        <div className="w-px h-12 bg-gradient-to-b from-white/50 to-transparent" />
       </div>
     </section>
   );

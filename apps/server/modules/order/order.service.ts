@@ -8,11 +8,15 @@ import type { ShipmentStatusType } from "@repo/schema/shippingSchema";
 import appConfig from "@/configs/appConfig";
 import { snap } from "@/lib/midtrans";
 import { AppError } from "@/utils/appError";
+import { NotificationService } from "../notification/notification.service";
 import { BaseService } from "../service";
 
 export class OrderService extends BaseService<Orders, "orders"> {
+  private notificationService: NotificationService;
+
   constructor() {
     super("orders");
+    this.notificationService = new NotificationService();
   }
 
   findAll = async ({
@@ -382,6 +386,15 @@ export class OrderService extends BaseService<Orders, "orders"> {
       },
     });
 
+    // Create notification for order created
+    await this.notificationService.notifyOrderCreated(
+      input.user_id,
+      result.order.id,
+    );
+
+    // Notify admins about new order
+    await this.notificationService.notifyAdminsNewOrder(result.order.id);
+
     return {
       order: result.order,
       payment: { provider_payment_id: snapResponse.token },
@@ -490,6 +503,25 @@ export class OrderService extends BaseService<Orders, "orders"> {
               },
             },
           });
+
+          // Check for low/out of stock and notify admins
+          const newStock = currentStock - item.quantity;
+          const lowStockThreshold = variant.inventory?.[0]?.safety_stock ?? 5;
+
+          if (newStock <= 0) {
+            // Out of stock - notify admins
+            await this.notificationService.notifyAllAdmins("OUT_OF_STOCK", {
+              product_title: item.title ?? `Variant ${variant.sku}`,
+              variant_id: variant.id,
+            });
+          } else if (newStock <= lowStockThreshold) {
+            // Low stock - notify admins
+            await this.notificationService.notifyAllAdmins("LOW_STOCK", {
+              product_title: item.title ?? `Variant ${variant.sku}`,
+              variant_id: variant.id,
+              remaining_stock: newStock,
+            });
+          }
         }
       }
 
@@ -509,6 +541,28 @@ export class OrderService extends BaseService<Orders, "orders"> {
             },
           });
         }
+      }
+
+      // Create notification for status change
+      const statusNotificationMap: Record<string, () => Promise<unknown>> = {
+        paid: () =>
+          this.notificationService.notifyOrderPaid(order.user_id, order.id),
+        shipped: () =>
+          this.notificationService.notifyOrderShipped(order.user_id, order.id),
+        delivered: () =>
+          this.notificationService.notifyOrderDelivered(
+            order.user_id,
+            order.id,
+          ),
+        cancelled: () =>
+          this.notificationService.notifyOrderCancelled(
+            order.user_id,
+            order.id,
+          ),
+      };
+
+      if (newStatus && statusNotificationMap[newStatus]) {
+        await statusNotificationMap[newStatus]();
       }
 
       return {

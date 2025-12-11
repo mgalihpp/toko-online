@@ -30,7 +30,7 @@ export const adminMiddleware = asyncHandler(
       console.error(error);
       throw AppError.unauthorized();
     }
-  }
+  },
 );
 
 export const requireAdmin = [authenticateMiddleware, adminMiddleware];

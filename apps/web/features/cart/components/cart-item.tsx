@@ -19,7 +19,7 @@ interface CartItemProps {
 export function CartItem({ item }: CartItemProps) {
   const { updateQuantity, removeFromCart } = useCartStore();
   const [runUpdateCartItemQuantityAction] = useServerAction(
-    updateCartItemQuantity
+    updateCartItemQuantity,
   );
   const [runDeleteCartItemAction] = useServerAction(deleteCartItem);
 

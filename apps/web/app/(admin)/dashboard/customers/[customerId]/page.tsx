@@ -71,7 +71,7 @@ export default function CustomerDetailPage() {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -229,7 +229,7 @@ export default function CustomerDetailPage() {
                       <p className="text-sm text-muted-foreground">
                         {format(
                           order.created_at ?? new Date(),
-                          "dd MMMM yyyy HH:mm"
+                          "dd MMMM yyyy HH:mm",
                         )}{" "}
                         WIB
                       </p>
@@ -277,8 +277,8 @@ export default function CustomerDetailPage() {
                   {formatCurrency(
                     customerData?.orders.reduce(
                       (acc, order) => acc + Number(order.total_cents),
-                      0
-                    ) ?? 0
+                      0,
+                    ) ?? 0,
                   )}
                 </p>
               </div>
@@ -287,7 +287,7 @@ export default function CustomerDetailPage() {
                 <p className="font-medium">
                   {format(
                     customerData?.createdAt ?? new Date(),
-                    "dd MMMM yyyy HH:mm"
+                    "dd MMMM yyyy HH:mm",
                   )}{" "}
                   WIB
                 </p>

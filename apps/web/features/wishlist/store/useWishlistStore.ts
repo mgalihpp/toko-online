@@ -15,7 +15,7 @@ export const useWishlistStore = create<WishlistState>((set, _get) => ({
   removeFromWishlist: (wishlist_item_id) =>
     set((state) => ({
       items: state.items.filter(
-        (i) => !(i.wishlist_item_id === wishlist_item_id)
+        (i) => !(i.wishlist_item_id === wishlist_item_id),
       ),
     })),
   setLoading: (v) =>

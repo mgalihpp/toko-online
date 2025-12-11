@@ -2,6 +2,8 @@ import { Router } from "express";
 import { addressRouter } from "@/modules/address/address.route";
 import { categoriesRouter } from "@/modules/categories/categories.route";
 import { customerRouter } from "@/modules/customer/customer.route";
+import { dashboardRouter } from "@/modules/dashboard/dashboard.route";
+import { notificationRouter } from "@/modules/notification/notification.route";
 import { orderRouter } from "@/modules/order/order.route";
 import { paymentRouter } from "@/modules/payment/payment.route";
 import { productRouter } from "@/modules/product/product.route";
@@ -23,6 +25,12 @@ import { productRouter } from "@/modules/product/product.route";
  * @since 1.0.0
  */
 const v1Router: Router = Router();
+
+/**
+ * Route ini menangani semua endpoint terkait dashboard.
+ * Semua route yang berhubungan dengan statistik dan analytics dashboard admin.
+ */
+v1Router.use("/dashboard", dashboardRouter);
 
 /**
  * Route ini menangani semua endpoint terkait produk.
@@ -65,5 +73,12 @@ v1Router.use("/payment", paymentRouter);
  * dikelola di dalam router ini.
  */
 v1Router.use("/customers", customerRouter);
+
+/**
+ * Route ini menangani semua endpoint terkait notifications.
+ * Semua route yang berhubungan dengan data notifications, managemen notifications.
+ * dikelola di dalam router ini.
+ */
+v1Router.use("/notifications", notificationRouter);
 
 export default v1Router;

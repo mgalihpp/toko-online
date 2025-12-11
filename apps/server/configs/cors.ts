@@ -32,7 +32,7 @@ export const corsOptions = {
     return callback(new Error(msg), false);
   },
 
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "x-idempotency-key"],
   credentials: true, // Allow cookies and authorization headers
 };

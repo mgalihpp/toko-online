@@ -34,7 +34,7 @@ const CartSheet = () => {
   } = useCartStore();
   const [runGetOrCreateCartAction] = useServerAction(getOrCreateCart);
   const [runUpdateCartItemQuantityAction] = useServerAction(
-    updateCartItemQuantity
+    updateCartItemQuantity,
   );
   const [runDeleteCartItemAction, isDeleting] = useServerAction(deleteCartItem);
 
@@ -229,12 +229,12 @@ const CartSheet = () => {
                               updateQuantity(
                                 item.cart_item_id,
                                 item.variant_id,
-                                newQty
+                                newQty,
                               );
                             } else {
                               removeFromCart(
                                 item.cart_item_id,
-                                item.variant_id
+                                item.variant_id,
                               );
                             }
 
@@ -265,7 +265,7 @@ const CartSheet = () => {
                             updateQuantity(
                               item.cart_item_id,
                               item.variant_id,
-                              newQty
+                              newQty,
                             );
 
                             await runUpdateCartItemQuantityAction({

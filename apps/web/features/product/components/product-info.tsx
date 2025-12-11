@@ -54,14 +54,14 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 
   // Initial selected size & color dari variant pertama (kalau ada)
   const initialOptionValues = parseOptions(
-    product.product_variants[0]?.option_values
+    product.product_variants[0]?.option_values,
   );
 
-  const [selectedSize, setSelectedSize] = useState(
-    initialOptionValues?.size ?? "S"
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(
+    initialOptionValues?.size,
   );
-  const [selectedColor, setSelectedColor] = useState(
-    initialOptionValues?.color ?? "default"
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(
+    initialOptionValues?.color,
   );
   const [quantity, setQuantity] = useState(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
@@ -81,7 +81,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
     }
 
     return Array.from(sizeSet).sort(
-      (a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b)
+      (a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b),
     );
   }, [product]);
 
@@ -101,7 +101,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const availableStock = selectedVariant ? getVariantStock(selectedVariant) : 0;
 
   const cartItem = items.find(
-    (i) => i.id === product.id && i.variant_id === selectedVariant?.id
+    (i) => i.id === product.id && i.variant_id === selectedVariant?.id,
   );
   const inCart = !!cartItem;
   const cartQuantity = cartItem?.quantity ?? 0;
@@ -116,7 +116,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       selectedVariant
         ? parseOptions(selectedVariant.option_values)
         : initialOptionValues,
-    [selectedVariant, initialOptionValues]
+    [selectedVariant, initialOptionValues],
   );
 
   // -------------------------

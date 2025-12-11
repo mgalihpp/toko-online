@@ -23,7 +23,7 @@ export const WishlistButton = ({ product }: WishlistButtonProps) => {
   // Menjumlahkan stok
   const totalStock = inventories.reduce(
     (sum, inv) => sum + (inv?.stock_quantity ?? 0),
-    0
+    0,
   );
 
   const handleOnClick = async (product: ProductWithRelations) => {

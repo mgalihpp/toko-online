@@ -25,27 +25,34 @@ import { useDropzone } from "@uploadthing/react";
 import { Image, Upload, X } from "lucide-react";
 import { type ClipboardEvent, useRef } from "react";
 import { toast } from "sonner";
-import { useProductMediaUpload } from "@/features/upload/hooks/useProductMediaUpload";
+import type { Attachment } from "@/types/index";
 
-export const ProductImageUpload = () => {
+type ProductImageUploadProps = {
+  attachments: Attachment[];
+  onUpload: (files: File[]) => void;
+  onRemove: (attachment: Attachment) => void;
+  onReset?: () => void;
+  isUploading: boolean;
+  uploadProgress?: number;
+};
+
+export const ProductImageUpload = ({
+  attachments,
+  onUpload,
+  onRemove,
+  onReset,
+  isUploading,
+  uploadProgress,
+}: ProductImageUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleButtonClick = () => {
     fileInputRef.current?.click();
   };
 
-  const {
-    attachments,
-    isUploading,
-    removeAttachment,
-    reset,
-    startUpload,
-    uploadProgress,
-  } = useProductMediaUpload();
-
   const { getInputProps, getRootProps, isDragActive } = useDropzone({
     maxFiles: 5 - attachments.length,
-    onDrop: startUpload,
+    onDrop: onUpload,
   });
 
   const { onClick: _, ...rootProps } = getRootProps();
@@ -55,7 +62,7 @@ export const ProductImageUpload = () => {
       .filter((item) => item.kind === "file")
       .map((item) => item.getAsFile()) as File[];
 
-    startUpload(files);
+    onUpload(files);
   }
 
   return (
@@ -143,7 +150,7 @@ export const ProductImageUpload = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    reset();
+                    onReset?.();
                     toast.success("Semua gambar dihapus");
                   }}
                 >
@@ -199,7 +206,7 @@ export const ProductImageUpload = () => {
                       variant="destructive"
                       size="icon"
                       className="absolute right-2 top-2 h-8 w-8 opacity-0 shadow-lg transition-opacity duration-300 group-hover:opacity-100"
-                      onClick={() => removeAttachment(attachment)}
+                      onClick={() => onRemove(attachment)}
                     >
                       <X className="h-4 w-4" />
                     </Button>

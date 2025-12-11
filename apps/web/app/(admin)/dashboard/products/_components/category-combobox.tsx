@@ -31,17 +31,17 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 
 type CategoryComboboxProps = {
-  defaultValue?: string;
+  value?: number;
   onValueChange: (value: number) => void;
 };
 
 export function CategoryCombobox({
-  defaultValue = "",
+  value,
   onValueChange,
 }: CategoryComboboxProps) {
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [value, setValue] = useState(defaultValue);
+  // Remove internal value state to enforce controlled behavior
   const [categories, setCategories] = useState<
     { label: string; value: string }[]
   >([]);
@@ -79,7 +79,6 @@ export function CategoryCombobox({
           };
 
           setCategories([...categories, newCategory]);
-          setValue(newValue);
           onValueChange(Number(newValue));
           setNewCategoryName("");
           setDialogOpen(false);
@@ -109,10 +108,6 @@ export function CategoryCombobox({
     }
   }, [categoriesData]);
 
-  useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
-
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
@@ -124,7 +119,9 @@ export function CategoryCombobox({
             className="w-full justify-between bg-card hover:bg-accent transition-colors"
           >
             {value
-              ? categories.find((category) => category.value === value)?.label
+              ? categories.find(
+                  (category) => category.value === value.toString(),
+                )?.label
               : "Select category..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -156,7 +153,6 @@ export function CategoryCombobox({
                     key={category.value}
                     value={category.value}
                     onSelect={(currentValue) => {
-                      setValue(currentValue === value ? "" : currentValue);
                       onValueChange(Number(currentValue));
                       setOpen(false);
                     }}
@@ -164,7 +160,9 @@ export function CategoryCombobox({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        value === category.value ? "opacity-100" : "opacity-0",
+                        value?.toString() === category.value
+                          ? "opacity-100"
+                          : "opacity-0",
                       )}
                     />
                     {category.label}

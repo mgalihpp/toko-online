@@ -6,7 +6,7 @@ import {
   AvatarImage,
 } from "@repo/ui/components/avatar";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { ChevronRight, Lock, MapPin, Package, User } from "lucide-react";
+import { Bell, ChevronRight, Lock, MapPin, Package, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -16,6 +16,7 @@ const menuItems = [
   { href: "/user/settings/profile", label: "Biodata Diri", icon: User },
   { href: "/user/settings/addresses", label: "Daftar Alamat", icon: MapPin },
   { href: "/user/settings/orders", label: "Pesanan Saya", icon: Package },
+  { href: "/user/settings/notifications", label: "Notifikasi", icon: Bell },
   { href: "/user/settings/security", label: "Keamanan Akun", icon: Lock },
 ];
 

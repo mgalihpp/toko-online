@@ -22,10 +22,12 @@ export default async function ProductPage({ params }: Props) {
   return (
     <main>
       <section className="container mx-auto max-w-7xl px-4 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
           <ProductGallery images={product.product_images} />
 
-          <ProductInfo product={product} />
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <ProductInfo product={product} />
+          </div>
         </div>
         <ProductTabs product={product} />
         <RelatedProducts productId={product.id} />

@@ -11,7 +11,7 @@ export const customerApi = {
 
   getById: async (customerId: string) => {
     const res = await axios.get<ApiResponse<UserWithRelations>>(
-      `/customers/${customerId}`
+      `/customers/${customerId}`,
     );
     const { data } = res.data;
     return data;

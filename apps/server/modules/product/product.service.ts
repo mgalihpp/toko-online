@@ -279,7 +279,7 @@ export class ProductService extends BaseService<Product, "product"> {
     if (existingReview) {
       throw AppError.httpException(
         "Kamu sudah memberi ulasan untuk produk ini",
-        HTTPSTATUS.CONFLICT
+        HTTPSTATUS.CONFLICT,
       );
     }
 

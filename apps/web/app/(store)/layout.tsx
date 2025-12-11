@@ -5,6 +5,7 @@ import "@repo/ui/globals.css";
 import { Toaster } from "@repo/ui/components/sonner";
 import { Footer } from "@/components/navbar/footer";
 import { Header } from "@/components/navbar/header";
+import { MobileBottomNav } from "@/components/navbar/mobile-bottom-nav";
 import { ReactQueryProvider } from "@/components/react-query";
 
 const geistSans = localFont({
@@ -33,8 +34,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <Header />
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ReactQueryProvider>
+          <Header />
+          <div className="pb-20 lg:pb-0">{children}</div>
+          <MobileBottomNav />
+        </ReactQueryProvider>
         <Toaster position="top-center" richColors />
         <Footer />
       </body>

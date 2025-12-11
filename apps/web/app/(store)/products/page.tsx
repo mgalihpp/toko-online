@@ -325,7 +325,7 @@ export default function ProductsPage() {
                         "block w-full px-4 py-2 text-left text-sm hover:bg-gray-100",
                         option.value === filter.sort
                           ? "bg-gray-100 text-gray-900"
-                          : "text-gray-500"
+                          : "text-gray-500",
                       )}
                       onClick={() =>
                         setFilter((prev: any) => ({

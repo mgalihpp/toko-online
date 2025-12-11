@@ -80,7 +80,7 @@ export const createProductImagesSchema = z.array(
     alt: z.string().optional(),
     sort_order: z.number(),
     key: z.string(),
-  })
+  }),
 );
 
 export const createProductReviewSchema = z.object({

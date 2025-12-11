@@ -80,8 +80,8 @@ const SizeGuideDialog = ({ open, onOpenChange }: SizeGuideDialogProps) => {
           <ul className="space-y-2 text-muted-foreground">
             <li>
               <span className="font-medium text-foreground">Dada:</span> Ukur
-              melingkar di bagian dada paling penuh, pastikan pita meteran
-              tetap sejajar.
+              melingkar di bagian dada paling penuh, pastikan pita meteran tetap
+              sejajar.
             </li>
             <li>
               <span className="font-medium text-foreground">Panjang:</span> Ukur

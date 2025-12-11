@@ -77,7 +77,7 @@ export const ProductGrid = memo(function ProductGrid({
                     const total =
                       p.reviews?.reduce(
                         (acc, review) => acc + (review.rating || 0),
-                        0
+                        0,
                       ) || 0;
                     const count = p.reviews?.length || 0;
                     return count > 0
