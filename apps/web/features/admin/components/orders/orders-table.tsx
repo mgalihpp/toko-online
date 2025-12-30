@@ -131,9 +131,8 @@ export function OrdersTable({ status }: OrdersTableProps) {
               paymentStatusColors[status as keyof typeof paymentStatusColors]
             }
           >
-            {paymentStatusLabels[
-              status as keyof typeof paymentStatusLabels
-            ] || status}
+            {paymentStatusLabels[status as keyof typeof paymentStatusLabels] ||
+              status}
           </Badge>
         );
       },

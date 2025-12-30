@@ -176,7 +176,7 @@ export class ReturnService extends BaseService<Returns, "returns"> {
         order_id: input.order_id,
         user_id: userId,
         reason: input.reason,
-        images: input.images as any ?? null,
+        images: (input.images as any) ?? null,
         status: "requested",
         return_items: {
           create: input.items.map((item) => ({
@@ -203,10 +203,7 @@ export class ReturnService extends BaseService<Returns, "returns"> {
   /**
    * Update return status (admin)
    */
-  updateStatus = async (
-    returnId: string,
-    input: UpdateReturnStatusInput,
-  ) => {
+  updateStatus = async (returnId: string, input: UpdateReturnStatusInput) => {
     const returnData = await this.db.returns.findUnique({
       where: { id: returnId },
       include: {
@@ -280,7 +277,8 @@ export class ReturnService extends BaseService<Returns, "returns"> {
                     variant_id: returnItem.order_item.variant_id,
                     quantity_change: returnItem.quantity,
                     previous_quantity: inventory.stock_quantity,
-                    new_quantity: inventory.stock_quantity + returnItem.quantity,
+                    new_quantity:
+                      inventory.stock_quantity + returnItem.quantity,
                     reason: `Return ${returnId} completed - stok dikembalikan`,
                   },
                 },

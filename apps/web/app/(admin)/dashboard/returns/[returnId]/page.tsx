@@ -20,21 +20,12 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import {
-  ArrowLeft,
-  Check,
-  ImageIcon,
-  Package,
-  RotateCcw,
-  User,
-  X,
-} from "lucide-react";
+import { Check, ImageIcon, Package, RotateCcw, User, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ErrorAlert } from "@/features/admin/components/error-alert";
-import { formatCurrency } from "@/features/admin/utils";
 import {
   useReturn,
   useUpdateReturnStatus,
@@ -140,11 +131,6 @@ export default function ReturnDetailPage() {
     <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/returns">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">
             Detail Pengembalian
@@ -193,7 +179,7 @@ export default function ReturnDetailPage() {
                     href={`/dashboard/orders/${returnData.order_id}`}
                     className="font-medium text-primary hover:underline"
                   >
-                    #{returnData.order_id?.slice(0, 8)}...
+                    #{returnData.order_id}
                   </Link>
                 </div>
               </div>
@@ -208,30 +194,34 @@ export default function ReturnDetailPage() {
               </div>
 
               {/* Proof Photos */}
-              {returnData.images && Array.isArray(returnData.images) && returnData.images.length > 0 && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Foto Bukti
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {(returnData.images as Array<{ url: string; key: string }>).map((img, idx) => (
-                      <a
-                        key={img.key}
-                        href={img.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-20 h-20 rounded-lg overflow-hidden border hover:opacity-80 transition-opacity"
-                      >
-                        <img
-                          src={img.url}
-                          alt={`Bukti ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </a>
-                    ))}
+              {returnData.images &&
+                Array.isArray(returnData.images) &&
+                returnData.images.length > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Foto Bukti
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(
+                        returnData.images as Array<{ url: string; key: string }>
+                      ).map((img, idx) => (
+                        <a
+                          key={img.key}
+                          href={img.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-20 h-20 rounded-lg overflow-hidden border hover:opacity-80 transition-opacity"
+                        >
+                          <img
+                            src={img.url}
+                            alt={`Bukti ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </a>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </CardContent>
           </Card>
 

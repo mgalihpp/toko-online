@@ -52,17 +52,17 @@ export class ProductService extends BaseService<Product, "product"> {
     if (q.colors?.length || q.sizes?.length) {
       const colorCond = q.colors?.length
         ? {
-          OR: q.colors.map((c) => ({
-            option_values: { path: ["color"], equals: c },
-          })),
-        }
+            OR: q.colors.map((c) => ({
+              option_values: { path: ["color"], equals: c },
+            })),
+          }
         : null;
       const sizeCond = q.sizes?.length
         ? {
-          OR: q.sizes.map((s) => ({
-            option_values: { path: ["size"], equals: s },
-          })),
-        }
+            OR: q.sizes.map((s) => ({
+              option_values: { path: ["size"], equals: s },
+            })),
+          }
         : null;
 
       where.product_variants = {

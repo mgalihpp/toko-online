@@ -101,9 +101,14 @@ function getNotificationDescription(notification: Notifications): string {
     case "RETURN_REQUEST":
       return `Permintaan pengembalian untuk pesanan #${(payload?.order_id as string)?.slice(0, 8) ?? ""}`;
     case "RETURN_APPROVED":
-      return (payload?.message as string) ?? `Pengajuan pengembalian Anda telah disetujui`;
+      return (
+        (payload?.message as string) ??
+        `Pengajuan pengembalian Anda telah disetujui`
+      );
     case "RETURN_REJECTED":
-      return (payload?.message as string) ?? `Pengajuan pengembalian Anda ditolak`;
+      return (
+        (payload?.message as string) ?? `Pengajuan pengembalian Anda ditolak`
+      );
     case "RETURN_COMPLETED":
       return (payload?.message as string) ?? `Pengembalian Anda telah selesai`;
     case "LOW_STOCK":

@@ -333,15 +333,19 @@ model ReturnItems {
 }
 
 model Reviews {
-  id         String   @id @default(uuid()) @db.Uuid
-  user_id    String
-  product_id String   @db.Uuid
-  rating     Int      @db.SmallInt
-  title      String?  @db.VarChar(200)
-  body       String?  @db.Text
-  created_at DateTime @default(now()) @db.Timestamptz
-  user       User     @relation(fields: [user_id], references: [id])
-  product    Product  @relation(fields: [product_id], references: [id])
+  id            String   @id @default(uuid()) @db.Uuid
+  user_id       String
+  product_id    String   @db.Uuid
+  rating        Int      @db.SmallInt
+  title         String?  @db.VarChar(200)
+  body          String?  @db.Text
+  status        String   @default("approved") @db.VarChar(30) // approved, rejected
+  is_reported   Boolean  @default(false)
+  report_reason String?  @db.Text
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz
+  user          User     @relation(fields: [user_id], references: [id])
+  product       Product  @relation(fields: [product_id], references: [id])
 }
 
 model Coupons {

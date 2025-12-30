@@ -14,64 +14,6 @@ import { formatCurrency } from "../../utils";
 import { DataTableSkeleton } from "../data-table-skeleton";
 import { ErrorAlert } from "../error-alert";
 
-interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  orders: number;
-  spent: string;
-  status: "Active" | "Inactive";
-}
-
-const customers: Customer[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+1-234-567-8900",
-    orders: 5,
-    spent: "$1,234.50",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    phone: "+1-234-567-8901",
-    orders: 8,
-    spent: "$3,456.78",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    phone: "+1-234-567-8902",
-    orders: 2,
-    spent: "$567.89",
-    status: "Inactive",
-  },
-  {
-    id: 4,
-    name: "Alice Brown",
-    email: "alice@example.com",
-    phone: "+1-234-567-8903",
-    orders: 12,
-    spent: "$5,678.90",
-    status: "Active",
-  },
-  {
-    id: 5,
-    name: "Charlie Wilson",
-    email: "charlie@example.com",
-    phone: "+1-234-567-8904",
-    orders: 3,
-    spent: "$890.12",
-    status: "Active",
-  },
-];
-
 export function CustomersTable() {
   const {
     data: customerData,
@@ -185,7 +127,7 @@ export function CustomersTable() {
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-lg font-semibold">Customers</h3>
+        <h3 className="text-lg font-semibold">Pelanggan</h3>
       </CardHeader>
       <CardContent>
         {isPending ? (

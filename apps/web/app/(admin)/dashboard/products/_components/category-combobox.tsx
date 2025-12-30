@@ -122,13 +122,13 @@ export function CategoryCombobox({
               ? categories.find(
                   (category) => category.value === value.toString(),
                 )?.label
-              : "Select category..."}
+              : "Pilih kategori..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0 bg-popover" align="start">
           <Command>
-            <CommandInput placeholder="Search category..." />
+            <CommandInput placeholder="Cari kategori..." />
             <CommandList>
               <CommandEmpty>
                 <div className="flex flex-col justify-center items-center gap-4">

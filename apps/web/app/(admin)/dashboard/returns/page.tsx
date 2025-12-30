@@ -8,21 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
-import { Skeleton } from "@repo/ui/components/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@repo/ui/components/table";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
-import { Eye, Package, RotateCcw } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Eye, Package } from "lucide-react";
 import Link from "next/link";
+import { DataTable } from "@/features/admin/components/data-table";
+import { DataTableSkeleton } from "@/features/admin/components/data-table-skeleton";
 import { ErrorAlert } from "@/features/admin/components/error-alert";
-import { formatCurrency } from "@/features/admin/utils";
+import { formatDate } from "@/features/admin/utils";
 import { useReturns } from "@/features/order/queries/useReturnQuery";
 
 // Status labels dan colors
@@ -42,6 +34,18 @@ const returnStatusColors: Record<string, string> = {
   completed: "bg-green-500/20 text-green-600 border-green-500/30",
 };
 
+interface ReturnItem {
+  id: string;
+  order_id: string;
+  status: string;
+  created_at: string;
+  user?: {
+    name?: string;
+    email?: string;
+  };
+  return_items?: unknown[];
+}
+
 export default function ReturnsPage() {
   const { data: returns, isPending, isError, refetch } = useReturns();
 
@@ -53,6 +57,75 @@ export default function ReturnsPage() {
     },
     {} as Record<string, number>,
   );
+
+  const columns: ColumnDef<ReturnItem>[] = [
+    {
+      accessorKey: "id",
+      header: "ID Return",
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">
+          {row.original.id.slice(0, 8)}...
+        </span>
+      ),
+    },
+    {
+      accessorKey: "order_id",
+      header: "Pesanan",
+      cell: ({ row }) => (
+        <Link
+          href={`/dashboard/orders/${row.original.order_id}`}
+          className="text-primary hover:underline"
+        >
+          #{row.original.order_id?.slice(0, 8)}...
+        </Link>
+      ),
+    },
+    {
+      accessorKey: "user.name",
+      header: "Pelanggan",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.user?.name || "-"}</p>
+          <p className="text-xs text-muted-foreground">
+            {row.original.user?.email}
+          </p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "created_at",
+      header: "Tanggal",
+      cell: ({ row }) => formatDate(row.original.created_at),
+    },
+    {
+      accessorKey: "return_items",
+      header: "Item",
+      cell: ({ row }) => (
+        <span>{row.original.return_items?.length || 0} item</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={returnStatusColors[row.original.status]}>
+          {returnStatusLabels[row.original.status] || row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Aksi",
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/dashboard/returns/${row.original.id}`}>
+            <Eye className="h-4 w-4 mr-1" />
+            Detail
+          </Link>
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -129,13 +202,12 @@ export default function ReturnsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RotateCcw className="h-5 w-5" />
             Daftar Pengembalian
           </CardTitle>
         </CardHeader>
         <CardContent>
           {isPending ? (
-            <TableSkeleton />
+            <DataTableSkeleton columns={7} rows={5} />
           ) : isError ? (
             <ErrorAlert
               description="Gagal memuat data pengembalian."
@@ -149,97 +221,15 @@ export default function ReturnsPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID Return</TableHead>
-                    <TableHead>Pesanan</TableHead>
-                    <TableHead>Pelanggan</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {returns?.map((returnItem) => (
-                    <TableRow key={returnItem.id}>
-                      <TableCell className="font-mono text-sm">
-                        {returnItem.id.slice(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/dashboard/orders/${returnItem.order_id}`}
-                          className="text-primary hover:underline"
-                        >
-                          #{returnItem.order_id?.slice(0, 8)}...
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {returnItem.user?.name || "-"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {returnItem.user?.email}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {format(
-                          new Date(returnItem.created_at),
-                          "dd MMM yyyy",
-                          {
-                            locale: id,
-                          },
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {returnItem.return_items?.length || 0} item
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={returnStatusColors[returnItem.status]}
-                        >
-                          {returnStatusLabels[returnItem.status] ||
-                            returnItem.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/dashboard/returns/${returnItem.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            Detail
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              columns={columns}
+              data={(returns as unknown as ReturnItem[]) ?? []}
+              searchPlaceholder="Cari berdasarkan ID..."
+              searchKey="id"
+            />
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-4">
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 flex-1" />
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-16" />
-          <Skeleton className="h-10 w-20" />
-          <Skeleton className="h-10 w-16" />
-        </div>
-      ))}
     </div>
   );
 }

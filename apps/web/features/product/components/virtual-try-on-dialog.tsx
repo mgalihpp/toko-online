@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "@/lib/axios";
 import { Button } from "@repo/ui/components/button";
 import {
   Dialog,
@@ -18,14 +17,17 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
+import axios from "@/lib/axios";
 import { usePoseDetection } from "../hooks/use-pose-detection";
 import {
   calculateBodyMeasurements,
+  calculateMeshCorners,
   drawClothingOverlay,
   drawPoseLandmarks,
   type NormalizedLandmark,
   type PoseResults,
 } from "../utils/clothing-overlay";
+import { WebGLClothingRenderer } from "../utils/webgl-clothing-renderer";
 
 interface VirtualTryOnDialogProps {
   open: boolean;
@@ -42,12 +44,66 @@ export default function VirtualTryOnDialog({
 }: VirtualTryOnDialogProps) {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const webglCanvasRef = useRef<HTMLCanvasElement>(null);
   const clothingImageRef = useRef<HTMLImageElement | null>(null);
+  const webglRendererRef = useRef<WebGLClothingRenderer | null>(null);
 
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [useWebGL, setUseWebGL] = useState(true);
+
+  // Initialize WebGL renderer with delayed retry
+  useEffect(() => {
+    if (!open) return;
+
+    let timeoutId: NodeJS.Timeout;
+    let disposed = false;
+
+    const initWebGL = () => {
+      if (disposed) return;
+
+      if (webglCanvasRef.current && !webglRendererRef.current) {
+        const renderer = new WebGLClothingRenderer();
+        if (renderer.initialize(webglCanvasRef.current)) {
+          webglRendererRef.current = renderer;
+          setUseWebGL(true);
+          console.log("WebGL initialized successfully");
+
+          // Load texture if image already loaded
+          if (clothingImageRef.current) {
+            renderer.loadTexture(clothingImageRef.current);
+          }
+        } else {
+          console.warn("WebGL not available, falling back to Canvas 2D");
+          setUseWebGL(false);
+        }
+      } else if (!webglCanvasRef.current) {
+        // Retry after a short delay if canvas not ready
+        timeoutId = setTimeout(initWebGL, 100);
+      }
+    };
+
+    // Delay initial attempt to ensure canvas is mounted
+    timeoutId = setTimeout(initWebGL, 50);
+
+    return () => {
+      disposed = true;
+      clearTimeout(timeoutId);
+      if (webglRendererRef.current) {
+        webglRendererRef.current.dispose();
+        webglRendererRef.current = null;
+      }
+    };
+  }, [open]);
+
+  // Load clothing texture to WebGL
+  useEffect(() => {
+    if (imageLoaded && clothingImageRef.current && webglRendererRef.current) {
+      webglRendererRef.current.loadTexture(clothingImageRef.current);
+    }
+  }, [imageLoaded]);
 
   // Load clothing image with background removal
   useEffect(() => {
@@ -74,13 +130,11 @@ export default function VirtualTryOnDialog({
         };
         img.onerror = () => {
           console.error("Failed to load processed image, using original");
-          // Fallback to original image
           loadOriginalImage();
         };
         img.src = processedImageUrl || productImage;
       } catch (error) {
         console.error("Remove.bg API failed, using original image:", error);
-        // Fallback to original image if API fails
         loadOriginalImage();
       }
     };
@@ -110,10 +164,11 @@ export default function VirtualTryOnDialog({
     };
   }, [productImage, open]);
 
-  // Handle pose results - draw overlay
+  // Handle pose results - draw overlay with WebGL
   const handleResults = useCallback(
     (results: PoseResults) => {
       const canvas = canvasRef.current;
+      const webglCanvas = webglCanvasRef.current;
       const video = webcamRef.current?.video;
 
       if (!canvas || !video) return;
@@ -127,6 +182,11 @@ export default function VirtualTryOnDialog({
 
       canvas.width = videoWidth;
       canvas.height = videoHeight;
+
+      if (webglCanvas) {
+        webglCanvas.width = videoWidth;
+        webglCanvas.height = videoHeight;
+      }
 
       // Clear canvas
       ctx.clearRect(0, 0, videoWidth, videoHeight);
@@ -143,24 +203,66 @@ export default function VirtualTryOnDialog({
         const mirroredLandmarks: NormalizedLandmark[] =
           results.poseLandmarks.map((landmark) => ({
             ...landmark,
-            x: 1 - landmark.x, // Mirror x coordinate
+            x: 1 - landmark.x,
           }));
 
-        const measurements = calculateBodyMeasurements(
+        const meshCorners = calculateMeshCorners(
           { poseLandmarks: mirroredLandmarks },
           videoWidth,
           videoHeight,
         );
 
-        // Draw clothing overlay
-        if (measurements && clothingImageRef.current && imageLoaded) {
-          drawClothingOverlay(
-            ctx,
-            clothingImageRef.current,
-            measurements,
+        // Try WebGL rendering first
+        let webglRendered = false;
+        if (
+          meshCorners &&
+          clothingImageRef.current &&
+          imageLoaded &&
+          webglRendererRef.current &&
+          useWebGL
+        ) {
+          try {
+            // Render with flip180 = false (always upright)
+            webglRendererRef.current.render(
+              videoWidth,
+              videoHeight,
+              meshCorners.topLeft,
+              meshCorners.topRight,
+              meshCorners.bottomLeft,
+              meshCorners.bottomRight,
+              0.9,
+              false, // Never flip 180, texture should always be upright
+              meshCorners.leftElbow,
+              meshCorners.rightElbow,
+            );
+
+            // Composite WebGL canvas onto main canvas
+            if (webglCanvas) {
+              ctx.drawImage(webglCanvas, 0, 0);
+              webglRendered = true;
+            }
+          } catch (e) {
+            console.error("WebGL render failed:", e);
+            webglRendered = false;
+          }
+        }
+
+        // Fallback to Canvas 2D if WebGL didn't render
+        if (!webglRendered && clothingImageRef.current && imageLoaded) {
+          const measurements = calculateBodyMeasurements(
+            { poseLandmarks: mirroredLandmarks },
             videoWidth,
             videoHeight,
           );
+          if (measurements) {
+            drawClothingOverlay(
+              ctx,
+              clothingImageRef.current,
+              measurements,
+              videoWidth,
+              videoHeight,
+            );
+          }
         }
 
         // Draw debug landmarks if enabled
@@ -169,7 +271,7 @@ export default function VirtualTryOnDialog({
         }
       }
     },
-    [imageLoaded, showLandmarks],
+    [imageLoaded, showLandmarks, useWebGL],
   );
 
   const { isLoading, isReady, error, startDetection, stopDetection } =
@@ -240,16 +342,17 @@ export default function VirtualTryOnDialog({
 
         <div className="relative bg-black aspect-video w-full">
           {/* Loading state */}
-          {(isLoading || !isReady || isProcessingImage) && hasPermission !== false && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10">
-              <Loader2 className="w-8 h-8 animate-spin mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {isProcessingImage
-                  ? "Memproses gambar pakaian..."
-                  : "Memuat model pose detection..."}
-              </p>
-            </div>
-          )}
+          {(isLoading || !isReady || isProcessingImage) &&
+            hasPermission !== false && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10">
+                <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {isProcessingImage
+                    ? "Memproses gambar pakaian..."
+                    : "Memuat model pose detection..."}
+                </p>
+              </div>
+            )}
 
           {/* Error state */}
           {(error || hasPermission === false) && (
@@ -284,7 +387,15 @@ export default function VirtualTryOnDialog({
             }}
           />
 
-          {/* Canvas for rendering overlay */}
+          {/* Hidden WebGL canvas for clothing rendering */}
+          <canvas
+            ref={webglCanvasRef}
+            className="absolute opacity-0 pointer-events-none"
+            width={640}
+            height={480}
+          />
+
+          {/* Canvas for rendering composite output */}
           <canvas ref={canvasRef} className="w-full h-full object-contain" />
         </div>
 

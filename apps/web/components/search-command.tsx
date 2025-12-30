@@ -11,7 +11,7 @@ import {
   CommandSeparator,
 } from "@repo/ui/components/command";
 import { cn } from "@repo/ui/lib/utils";
-import { Circle, File, Laptop, Moon, Search, Sun } from "lucide-react";
+import { Laptop, Moon, Search, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import * as React from "react";
@@ -59,7 +59,7 @@ export function SearchCommand({ ...props }: any) {
         onClick={() => setOpen(true)}
         {...props}
       >
-        <span className="hidden lg:inline-flex">Search dashboard...</span>
+        <span className="hidden lg:inline-flex">Cari ...</span>
         <span className="inline-flex lg:hidden">
           <Search />
         </span>
@@ -68,7 +68,7 @@ export function SearchCommand({ ...props }: any) {
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
+        <CommandInput placeholder="Ketik apapun yang ingin dicari..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="General">

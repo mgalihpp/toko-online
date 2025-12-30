@@ -2,10 +2,17 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@repo/ui/components/dropdown-menu";
 import { cn } from "@repo/ui/lib/utils";
 import { format } from "date-fns";
-import { CheckCircle, ChevronDown, Star } from "lucide-react";
+import { CheckCircle, ChevronDown, Flag, MoreHorizontal, Star } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useReportReview } from "@/features/admin/queries/useReviewQuery";
 import type { ProductWithRelations } from "@/types/index";
 
 type ProductTabsProps = {
@@ -15,6 +22,13 @@ type ProductTabsProps = {
 const ProductTabs = ({ product }: ProductTabsProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["description"]);
   const reviews = product.reviews || [];
+  const reportReviewMutation = useReportReview();
+
+  const handleReportReview = (reviewId: string) => {
+    reportReviewMutation.mutate(
+      { id: reviewId, reason: "Dilaporkan oleh pengguna" },
+    );
+  };
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) =>
@@ -115,9 +129,9 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
         <div className="space-y-8">
           {/* Rating Summary */}
           {ratingSummary.reviewCount > 0 && (
-            <div className="flex items-center gap-8 p-6 bg-secondary/50 rounded-2xl">
-              <div className="text-center">
-                <p className="text-5xl font-bold">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 p-4 sm:p-6 bg-secondary/50 rounded-2xl">
+              <div className="text-center shrink-0">
+                <p className="text-4xl sm:text-5xl font-bold">
                   {ratingSummary.average.toFixed(1)}
                 </p>
                 <div className="flex gap-0.5 mt-2 justify-center">
@@ -127,7 +141,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                   {ratingSummary.reviewCount} ulasan
                 </p>
               </div>
-              <div className="flex-1 space-y-2">
+              <div className="w-full sm:flex-1 space-y-1.5 sm:space-y-2">
                 {[5, 4, 3, 2, 1].map((star) => {
                   const count = ratingSummary.ratingCount[star] || 0;
                   const percentage =
@@ -135,16 +149,16 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                       ? (count / ratingSummary.reviewCount) * 100
                       : 0;
                   return (
-                    <div key={star} className="flex items-center gap-3">
-                      <span className="text-sm w-3">{star}</span>
+                    <div key={star} className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-xs sm:text-sm w-3">{star}</span>
                       <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-amber-400 rounded-full"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
-                      <span className="text-xs text-muted-foreground w-8">
+                      <span className="text-xs text-muted-foreground w-6 sm:w-8 text-right">
                         {count}
                       </span>
                     </div>
@@ -166,11 +180,11 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
               {reviews.slice(0, 5).map((review) => (
                 <div
                   key={review.id}
-                  className="p-6 rounded-xl border border-border"
+                  className="p-4 sm:p-6 rounded-xl border border-border"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                  <div className="flex items-start justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full bg-secondary flex items-center justify-center">
                         {review.user.image ? (
                           <img
                             src={review.user.image}
@@ -178,13 +192,13 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                             className="w-full h-full rounded-full object-cover"
                           />
                         ) : (
-                          <span className="text-sm font-bold">
+                          <span className="text-xs sm:text-sm font-bold">
                             {review.user?.name?.[0]?.toUpperCase() || "P"}
                           </span>
                         )}
                       </div>
-                      <div>
-                        <p className="font-semibold">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm sm:text-base truncate">
                           {review.user?.name || "Pembeli"}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -192,15 +206,34 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-0.5">
-                      {renderStars(review.rating || 0)}
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                      <div className="flex gap-0.5">
+                        {renderStars(review.rating || 0)}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Menu ulasan</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleReportReview(review.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Flag className="text-destructive mr-2 h-4 w-4" />
+                            Laporkan Ulasan
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   {review.title && (
-                    <p className="font-medium mb-2">{review.title}</p>
+                    <p className="font-medium text-sm sm:text-base mb-2">{review.title}</p>
                   )}
                   {review.body && (
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-muted-foreground text-xs sm:text-sm">
                       {review.body}
                     </p>
                   )}

@@ -37,7 +37,6 @@ import {
   FormMessage,
 } from "@repo/ui/components/form";
 import { Input } from "@repo/ui/components/input";
-import { Skeleton } from "@repo/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
@@ -53,6 +52,8 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { DataTable } from "@/features/admin/components/data-table";
+import { DataTableSkeleton } from "@/features/admin/components/data-table-skeleton";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
 import { api } from "@/lib/api";
 import type { Supplier } from "@/types/index";
 
@@ -70,7 +71,12 @@ export default function SuppliersPage() {
     },
   });
 
-  const { data: suppliers, isLoading } = useQuery({
+  const {
+    data: suppliers,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["suppliers"],
     queryFn: () => api.supplier.getAll(),
   });
@@ -273,12 +279,13 @@ export default function SuppliersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-24 w-full rounded-xl" />
-              <Skeleton className="h-24 w-full rounded-xl" />
-            </div>
+          {isPending ? (
+            <DataTableSkeleton columns={4} rows={5} />
+          ) : isError ? (
+            <ErrorAlert
+              description="Gagal memuat data pemasok."
+              action={() => refetch()}
+            />
           ) : (
             <DataTable
               columns={columns}

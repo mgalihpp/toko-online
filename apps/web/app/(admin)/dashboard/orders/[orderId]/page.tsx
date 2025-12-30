@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
+import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, Package, Printer, Truck } from "lucide-react";
 import Link from "next/link";
@@ -133,6 +134,149 @@ const handlePrintLabel = (orderData: any) => {
   }
 };
 
+function OrderDetailSkeleton() {
+  return (
+    <div className="p-0 md:p-8 space-y-6">
+      <div>
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-5 w-64 mt-2" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Order Status Card */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <div className="text-right space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Order Items Card */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-4 p-3 border rounded-md"
+                  >
+                    <Skeleton className="w-16 h-16 rounded-md" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-between">
+                <Skeleton className="h-5 w-12" />
+                <Skeleton className="h-5 w-24" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Shipping Information Card */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-5 w-56" />
+                <Skeleton className="h-5 w-48" />
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Customer Information */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <Skeleton className="h-4 w-16 mb-1" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Order Summary */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-16" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function OrderDetailPage() {
   const params = useParams();
   const { orderId } = params;
@@ -225,6 +369,10 @@ export default function OrderDetailPage() {
       setTrackingNumber(orderData.shipments[0]?.tracking_number ?? "");
     }
   }, [orderData]);
+
+  if (isPending) {
+    return <OrderDetailSkeleton />;
+  }
 
   return (
     <div className="p-0 md:p-8 space-y-6">

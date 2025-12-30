@@ -10,6 +10,7 @@ import { orderRouter } from "@/modules/order/order.route";
 import { paymentRouter } from "@/modules/payment/payment.route";
 import { productRouter } from "@/modules/product/product.route";
 import { returnRouter } from "@/modules/return/return.route";
+import { reviewRouter } from "@/modules/review/review.route";
 import { segmentRouter } from "@/modules/segment/segment.route";
 import { supplierRouter } from "@/modules/supplier/supplier.route";
 
@@ -120,5 +121,12 @@ v1Router.use("/coupons", couponRouter);
  * dikelola di dalam router ini.
  */
 v1Router.use("/returns", returnRouter);
+
+/**
+ * Route ini menangani semua endpoint terkait review.
+ * Semua route yang berhubungan dengan ulasan produk.
+ * dikelola di dalam router ini.
+ */
+v1Router.use("/reviews", reviewRouter);
 
 export default v1Router;

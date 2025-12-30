@@ -9,6 +9,7 @@ import { orderApi } from "./order.api";
 import { paymentApi } from "./payment.api";
 import { productApi } from "./product.api";
 import { returnApi } from "./return.api";
+import { reviewApi } from "./review.api";
 import { segmentApi } from "./segment.api";
 import { supplierApi } from "./supplier.api";
 
@@ -26,4 +27,6 @@ export const api = {
   inventory: inventoryApi,
   coupon: couponApi,
   return: returnApi,
+  review: reviewApi,
 };
+

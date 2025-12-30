@@ -10,65 +10,64 @@ import {
 } from "@repo/ui/components/card";
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
+import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { Mail, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type React from "react";
-import { useState } from "react";
-import { formatCurrency } from "@/features/admin/utils";
-import { statusColors } from "@/features/order/constants/shipment";
+import { useEffect, useState } from "react";
+import { formatCurrency, formatDate } from "@/features/admin/utils";
 import { api } from "@/lib/api";
 
-// Mock customer data
-const mockCustomer = {
-  id: 1,
-  name: "John Doe",
-  email: "john@example.com",
-  phone: "+1-234-567-8900",
-  status: "Active",
-  joinDate: "2024-01-15",
-  orders: 5,
-  spent: "1234.50",
-  addresses: [
-    { id: 1, type: "Billing", address: "123 Main St, New York, NY 10001" },
-    { id: 2, type: "Shipping", address: "456 Oak Ave, New York, NY 10002" },
-  ],
-  recentOrders: [
-    {
-      id: "ORD-001",
-      date: "2025-01-20",
-      amount: "$234.50",
-      status: "Delivered",
-    },
-    {
-      id: "ORD-002",
-      date: "2025-01-15",
-      amount: "$567.80",
-      status: "Delivered",
-    },
-  ],
+const statusConfig: Record<string, { label: string; className: string }> = {
+  pending: { label: "Menunggu", className: "bg-gray-100 text-gray-800" },
+  processing: { label: "Diproses", className: "bg-yellow-100 text-yellow-800" },
+  shipped: { label: "Dikirim", className: "bg-blue-100 text-blue-800" },
+  delivered: { label: "Terkirim", className: "bg-emerald-100 text-emerald-800" },
+  completed: { label: "Selesai", className: "bg-emerald-100 text-emerald-800" },
+  cancelled: { label: "Dibatalkan", className: "bg-red-100 text-red-800" },
+  returned: { label: "Dikembalikan", className: "bg-orange-100 text-orange-800" },
 };
 
 export default function CustomerDetailPage() {
   const router = useRouter();
   const { customerId } = useParams();
 
-  const [customer, setCustomer] = useState(mockCustomer);
+  const [customer, setCustomer] = useState({
+    name: "",
+    email: "",
+    status: "",
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: customer.name,
     email: customer.email,
-    phone: customer.phone,
     status: customer.status,
   });
 
-  const { data: customerData } = useQuery({
+  const { data: customerData, isLoading } = useQuery({
     queryKey: ["customer", customerId],
     queryFn: () => api.customer.getById(customerId as string),
     enabled: !!customerId,
   });
+
+  useEffect(() => {
+    if(customerData){
+      setCustomer({
+        name: customerData.name,
+        email: customerData.email,
+        status: customerData.banned ? "Diblokir" : "Aktif",
+      })
+      setFormData({
+        name: customerData.name,
+        email: customerData.email,
+        status: customerData.banned ? "Diblokir" : "Aktif",
+      })
+    }
+  }, [customerData])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -80,8 +79,114 @@ export default function CustomerDetailPage() {
   const handleSave = () => {
     setCustomer((prev) => ({ ...prev, ...formData }));
     setIsEditing(false);
-    console.log("[v0] Customer updated:", formData);
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-0 md:p-8 space-y-6">
+        {/* Header Skeleton */}
+        <div>
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-5 w-64 mt-2" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Skeleton */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Customer Information Skeleton */}
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-9 w-16" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-5 rounded" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-5 w-40" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Addresses Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="p-3 border rounded-md space-y-2">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Recent Orders Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 border rounded-md"
+                    >
+                      <div className="space-y-1">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-40" />
+                      </div>
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-5 w-24 ml-auto" />
+                        <Skeleton className="h-5 w-20 ml-auto" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar Skeleton */}
+          <div className="space-y-6">
+            {/* Statistics Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i}>
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-8 w-20 mt-1" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Actions Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-20" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-0 md:p-8 space-y-6">
@@ -90,7 +195,7 @@ export default function CustomerDetailPage() {
           {customerData?.name}
         </h1>
         <p className="text-muted-foreground mt-2">
-          Customer profile and order history
+          Profile pelanggan dan riwayat pesanan
         </p>
       </div>
 
@@ -106,7 +211,7 @@ export default function CustomerDetailPage() {
                 size="sm"
                 onClick={() => setIsEditing(!isEditing)}
               >
-                {isEditing ? "Cancel" : "Edit"}
+                {isEditing ? "Batal" : "Edit"}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -135,16 +240,6 @@ export default function CustomerDetailPage() {
                   </div>
                   <div>
                     <Label className="block text-sm font-medium mb-2">
-                      Phone
-                    </Label>
-                    <Input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div>
-                    <Label className="block text-sm font-medium mb-2">
                       Status
                     </Label>
                     <select
@@ -164,17 +259,17 @@ export default function CustomerDetailPage() {
               ) : (
                 <>
                   <div className="flex items-center gap-3">
+                    <User className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Nama</p>
+                      <p className="font-medium">{customerData?.name}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
                       <p className="font-medium">{customerData?.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium">{customer.phone}</p>
                     </div>
                   </div>
                   <div>
@@ -214,43 +309,54 @@ export default function CustomerDetailPage() {
 
           {/* Recent Orders */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Pesanan Terakhir</CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/dashboard/orders">Lihat Semua</Link>
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {customerData?.orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between p-3 border rounded-md"
-                  >
-                    <div>
-                      <p className="font-medium">{order.id}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(
-                          order.created_at ?? new Date(),
-                          "dd MMMM yyyy HH:mm",
-                        )}{" "}
-                        WIB
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">
-                        {formatCurrency(Number(order.total_cents))}
-                      </p>
-                      <Badge
-                        className={
-                          statusColors[
-                            order.status as keyof typeof statusColors
-                          ]
-                        }
+              {!customerData?.orders || customerData.orders.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  Belum ada pesanan
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {customerData.orders.slice(0, 5).map((order) => {
+                    const status = statusConfig[order.status] || {
+                      label: order.status,
+                      className: "bg-gray-100 text-gray-800",
+                    };
+
+                    return (
+                      <Link
+                        key={order.id}
+                        href={`/dashboard/orders/${order.id}`}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
                       >
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div>
+                          <p className="font-medium text-sm">#{order.id}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {customerData.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(order.created_at ?? new Date()), {
+                              addSuffix: true,
+                              locale: idLocale,
+                            })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">
+                            {formatCurrency(Number(order.total_cents))}
+                          </p>
+                          <Badge className={status.className}>{status.label}</Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -260,7 +366,7 @@ export default function CustomerDetailPage() {
           {/* Statistics */}
           <Card>
             <CardHeader>
-              <CardTitle>Statistics</CardTitle>
+              <CardTitle>Statistik</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -287,11 +393,7 @@ export default function CustomerDetailPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Bergabung Sejak</p>
                 <p className="font-medium">
-                  {format(
-                    customerData?.createdAt ?? new Date(),
-                    "dd MMMM yyyy HH:mm",
-                  )}{" "}
-                  WIB
+                  {formatDate(customerData?.createdAt)}
                 </p>
               </div>
             </CardContent>
@@ -304,14 +406,14 @@ export default function CustomerDetailPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <Button className="w-full bg-transparent" variant="outline">
-                Send Email
+                Kirim Email
               </Button>
-              <Button className="w-full bg-transparent" variant="outline">
-                View All Orders
+              <Button className="w-full bg-transparent" variant="outline" onClick={() => router.push("/dashboard/orders")}>
+                Liat semua pesanan
               </Button>
-              <Link href="/admin/customers" className="block">
+              <Link href="/dashboard/customers" className="block">
                 <Button className="w-full bg-transparent" variant="outline">
-                  Back to Customers
+                  Kembali ke pelanggan
                 </Button>
               </Link>
             </CardContent>

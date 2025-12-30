@@ -33,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
-import { Skeleton } from "@repo/ui/components/skeleton";
 import { Textarea } from "@repo/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -50,6 +49,8 @@ import { formatCurrency } from "@/features/admin/utils";
 import { api } from "@/lib/api";
 import type { InventoryWithRelations } from "@/types/index";
 import { DataTable } from "../data-table";
+import { DataTableSkeleton } from "../data-table-skeleton";
+import { ErrorAlert } from "../error-alert";
 
 type StockStatus = "optimal" | "low" | "out";
 
@@ -89,7 +90,12 @@ export function InventoryTable() {
   // Threshold form state
   const [thresholdValue, setThresholdValue] = useState(0);
 
-  const { data: inventory, isLoading } = useQuery({
+  const {
+    data: inventory,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["inventory", statusFilter],
     queryFn: () => api.inventory.getAll(statusFilter),
   });
@@ -312,18 +318,30 @@ export function InventoryTable() {
     },
   ];
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Stok Produk</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
+          <DataTableSkeleton columns={8} rows={5} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Stok Produk</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ErrorAlert
+            description="Gagal memuat data inventaris."
+            action={() => refetch()}
+          />
         </CardContent>
       </Card>
     );

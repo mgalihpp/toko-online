@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Reviews" ADD COLUMN     "is_reported" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "report_reason" TEXT,
+ADD COLUMN     "status" VARCHAR(30) NOT NULL DEFAULT 'approved',
+ADD COLUMN     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;

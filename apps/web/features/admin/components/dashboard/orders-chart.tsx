@@ -26,6 +26,7 @@ const COLORS = [
   "hsl(var(--chart-4))",
   "hsl(var(--chart-5))",
   "hsl(220, 8%, 70%)",
+  "hsl(0, 0%, 20%)",
 ];
 
 export function OrdersChart() {
@@ -76,7 +77,11 @@ export function OrdersChart() {
             <XAxis
               dataKey="status"
               className="text-xs"
-              tick={{ fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+              interval={0}
+              angle={-20}
+              textAnchor="end"
+              height={50}
             />
             <YAxis
               className="text-xs"

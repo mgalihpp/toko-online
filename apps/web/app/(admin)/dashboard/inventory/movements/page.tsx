@@ -6,15 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
-import { Skeleton } from "@repo/ui/components/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@repo/ui/components/table";
 import {
   Tooltip,
   TooltipContent,
@@ -22,44 +13,165 @@ import {
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, Edit2, Package } from "lucide-react";
 import Link from "next/link";
+import { DataTable } from "@/features/admin/components/data-table";
+import { DataTableSkeleton } from "@/features/admin/components/data-table-skeleton";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
 import { formatDate } from "@/features/admin/utils";
 import { api } from "@/lib/api";
 
+interface StockMovement {
+  id: string | number;
+  variant_id: string;
+  product_title: string;
+  variant_name: string;
+  sku: string | null;
+  action: string;
+  quantity_change: number;
+  new_quantity: number;
+  reason: string | null;
+  user_name: string | null;
+  created_at: string;
+}
+
+const getActionIcon = (action: string) => {
+  switch (action) {
+    case "STOCK_ADD":
+      return <ArrowUp className="w-4 h-4 text-emerald-600" />;
+    case "STOCK_REMOVE":
+      return <ArrowDown className="w-4 h-4 text-destructive" />;
+    case "STOCK_UNRESERVE":
+      return <Package className="w-4 h-4 text-blue-500" />;
+    default:
+      return <Edit2 className="w-4 h-4 text-muted-foreground" />;
+  }
+};
+
+const getActionLabel = (action: string) => {
+  switch (action) {
+    case "STOCK_ADD":
+      return "Tambah Stok";
+    case "STOCK_REMOVE":
+      return "Kurangi Stok";
+    case "STOCK_SET":
+      return "Set Stok";
+    case "STOCK_UNRESERVE":
+      return "Pembatalan Pesanan";
+    default:
+      return action;
+  }
+};
+
 export default function GlobalStockMovementsPage() {
-  const { data: movements, isLoading } = useQuery({
+  const {
+    data: movements,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["inventory-movements-global"],
     queryFn: () => api.inventory.getAllMovements(),
   });
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case "STOCK_ADD":
-        return <ArrowUp className="w-4 h-4 text-emerald-600" />;
-      case "STOCK_REMOVE":
-        return <ArrowDown className="w-4 h-4 text-destructive" />;
-      case "STOCK_UNRESERVE":
-        return <Package className="w-4 h-4 text-blue-500" />;
-      default:
-        return <Edit2 className="w-4 h-4 text-muted-foreground" />;
-    }
-  };
-
-  const getActionLabel = (action: string) => {
-    switch (action) {
-      case "STOCK_ADD":
-        return "Tambah Stok";
-      case "STOCK_REMOVE":
-        return "Kurangi Stok";
-      case "STOCK_SET":
-        return "Set Stok";
-      case "STOCK_UNRESERVE":
-        return "Pembatalan Pesanan";
-      default:
-        return action;
-    }
-  };
+  const columns: ColumnDef<StockMovement>[] = [
+    {
+      accessorKey: "product_title",
+      header: "Produk",
+      cell: ({ row }) => (
+        <div className="space-y-1 min-w-[200px]">
+          <Link
+            href={`/dashboard/inventory/${row.original.variant_id}`}
+            className="font-medium hover:underline text-primary block"
+          >
+            {row.original.product_title}
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            {row.original.variant_name}
+          </p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "sku",
+      header: "SKU",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs whitespace-nowrap">
+          {row.original.sku || "-"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "action",
+      header: "Aksi",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          {getActionIcon(row.original.action)}
+          <span className="text-sm">{getActionLabel(row.original.action)}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "quantity_change",
+      header: "Perubahan",
+      cell: ({ row }) => (
+        <span
+          className={
+            row.original.quantity_change >= 0
+              ? "text-emerald-600 font-medium"
+              : "text-destructive font-medium"
+          }
+        >
+          {row.original.quantity_change >= 0 ? "+" : ""}
+          {row.original.quantity_change}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "new_quantity",
+      header: "Stok Baru",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.new_quantity}</span>
+      ),
+    },
+    {
+      accessorKey: "reason",
+      header: "Alasan",
+      cell: ({ row }) => (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate block cursor-help max-w-[150px]">
+                {row.original.reason || "-"}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs break-words">{row.original.reason}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ),
+    },
+    {
+      accessorKey: "user_name",
+      header: "User",
+      cell: ({ row }) => (
+        <span className="text-sm whitespace-nowrap">
+          {row.original.user_name || "System"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "created_at",
+      header: "Waktu",
+      cell: ({ row }) => (
+        <span className="text-sm whitespace-nowrap">
+          {formatDate(row.original.created_at)}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="p-0 md:p-8 space-y-6">
@@ -79,98 +191,20 @@ export default function GlobalStockMovementsPage() {
           <CardTitle>Log Aktivitas Stok</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
+          {isPending ? (
+            <DataTableSkeleton columns={8} rows={8} />
+          ) : isError ? (
+            <ErrorAlert
+              description="Gagal memuat data pergerakan stok."
+              action={() => refetch()}
+            />
           ) : movements && movements.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produk</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Aksi</TableHead>
-                    <TableHead>Perubahan</TableHead>
-                    <TableHead>Stok Baru</TableHead>
-                    <TableHead>Alasan</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Waktu</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movements.map((movement) => (
-                    <TableRow key={String(movement.id)}>
-                      <TableCell className="min-w-[300px]">
-                        <div className="space-y-1">
-                          <Link
-                            href={`/dashboard/inventory/${movement.variant_id}`}
-                            className="font-medium hover:underline text-primary block"
-                          >
-                            {movement.product_title}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">
-                            {movement.variant_name}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <span className="font-mono text-xs">
-                          {movement.sku || "-"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {getActionIcon(movement.action)}
-                          <span className="text-sm">
-                            {getActionLabel(movement.action)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            movement.quantity_change >= 0
-                              ? "text-emerald-600 font-medium"
-                              : "text-destructive font-medium"
-                          }
-                        >
-                          {movement.quantity_change >= 0 ? "+" : ""}
-                          {movement.quantity_change}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {movement.new_quantity}
-                      </TableCell>
-                      <TableCell className="max-w-[250px]">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="truncate block cursor-help">
-                                {movement.reason || "-"}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs break-words">
-                                {movement.reason}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        {movement.user_name || "System"}
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        {formatDate(movement.created_at)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              columns={columns}
+              data={(movements as StockMovement[]) ?? []}
+              searchPlaceholder="Cari berdasarkan produk..."
+              searchKey="product_title"
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
               Belum ada pergerakan stok yang tercatat.

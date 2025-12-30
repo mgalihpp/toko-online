@@ -101,9 +101,7 @@ export const ADMIN_NAV_DATA = {
       title: "Pengembalian",
       icon: RotateCcw,
       url: "#",
-      items: [
-        { title: "Semua Pengembalian", url: "/returns" },
-      ],
+      items: [{ title: "Semua Pengembalian", url: "/returns" }],
     },
     {
       title: "Ulasan",

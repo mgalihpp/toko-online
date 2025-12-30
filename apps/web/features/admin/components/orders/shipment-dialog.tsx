@@ -29,6 +29,18 @@ import { toast } from "sonner";
 import { useUpdateOrderStatus } from "@/features/order/queries/useOrderQuery";
 import type { OrderWithRelations } from "@/types/index";
 
+const shipmentStatusLabels: Record<ShipmentStatusType, string> = {
+  ready: "Siap",
+  pending: "Menunggu",
+  processing: "Diproses",
+  shipped: "Dikirim",
+  in_transit: "Dalam Perjalanan",
+  delivered: "Terkirim",
+  failed: "Gagal",
+  returned: "Dikembalikan",
+  cancelled: "Dibatalkan",
+};
+
 interface ShipmentDialogProps {
   order: OrderWithRelations | null;
   open: boolean;
@@ -101,9 +113,7 @@ export function ShipmentDialog({
               <SelectContent>
                 {ShipmentStatus.options.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {s
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                    {shipmentStatusLabels[s]}
                   </SelectItem>
                 ))}
               </SelectContent>

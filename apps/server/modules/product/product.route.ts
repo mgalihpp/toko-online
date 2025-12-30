@@ -452,7 +452,11 @@ productRouter.delete(
  *                       type: string
  *                       description: Base64 encoded PNG with transparent background
  */
-productRouter.post("/remove-bg", authenticateMiddleware, productController.removeBackground);
+productRouter.post(
+  "/remove-bg",
+  authenticateMiddleware,
+  productController.removeBackground,
+);
 
 /* ---------------------- PRODUCT VARIANTS ---------------------- */
 

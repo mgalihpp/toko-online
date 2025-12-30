@@ -168,6 +168,7 @@ export class DashboardService {
       delivered: "Terkirim",
       completed: "Selesai",
       cancelled: "Dibatalkan",
+      returned: "Dikembalikan",
     };
 
     const statuses = [
@@ -177,6 +178,7 @@ export class DashboardService {
       "delivered",
       "completed",
       "cancelled",
+      "returned",
     ];
     const result: { status: string; label: string; count: number }[] = [];
 
@@ -200,6 +202,11 @@ export class DashboardService {
    */
   async getRecentOrders(limit = 10) {
     const orders = await this.db.orders.findMany({
+      where:{
+        status: {
+          not: "cancelled"
+        }
+      },
       take: limit,
       orderBy: { created_at: "desc" },
       include: {
@@ -237,7 +244,7 @@ export class DashboardService {
   async getTopProducts(limit = 5) {
     // Get all order items with their variants and products
     const orderItems = await this.db.orderItems.findMany({
-      where: { variant_id: { not: null } },
+      where: { variant_id: { not: null }, order: { status: { in: ['delivered', 'completed'] } } },
       select: {
         quantity: true,
         total_price_cents: true,
@@ -402,3 +409,4 @@ export class DashboardService {
     return Number((((current - previous) / previous) * 100).toFixed(1));
   }
 }
+
