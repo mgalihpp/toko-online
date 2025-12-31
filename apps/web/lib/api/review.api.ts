@@ -33,8 +33,7 @@ export const reviewApi = {
    * Get all reviews
    */
   getAll: async () => {
-    const res =
-      await axios.get<ApiResponse<ReviewWithRelations[]>>("/reviews");
+    const res = await axios.get<ApiResponse<ReviewWithRelations[]>>("/reviews");
     return res.data.data;
   },
 
@@ -60,8 +59,9 @@ export const reviewApi = {
    * Get review by ID
    */
   getById: async (id: string) => {
-    const res =
-      await axios.get<ApiResponse<ReviewWithRelations>>(`/reviews/${id}`);
+    const res = await axios.get<ApiResponse<ReviewWithRelations>>(
+      `/reviews/${id}`,
+    );
     return res.data.data;
   },
 

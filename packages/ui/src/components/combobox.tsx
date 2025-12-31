@@ -60,7 +60,7 @@ export function Combobox({
           className={cn(
             "w-full justify-between font-normal",
             !value && "text-muted-foreground",
-            className
+            className,
           )}
           disabled={disabled || isLoading}
         >
@@ -72,8 +72,8 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0" 
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
@@ -94,7 +94,7 @@ export function Combobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value === option.value ? "opacity-100" : "opacity-0",
                     )}
                   />
                   {option.label}
@@ -107,4 +107,3 @@ export function Combobox({
     </Popover>
   );
 }
-

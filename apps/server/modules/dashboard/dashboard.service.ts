@@ -202,10 +202,10 @@ export class DashboardService {
    */
   async getRecentOrders(limit = 10) {
     const orders = await this.db.orders.findMany({
-      where:{
+      where: {
         status: {
-          not: "cancelled"
-        }
+          not: "cancelled",
+        },
       },
       take: limit,
       orderBy: { created_at: "desc" },
@@ -244,7 +244,10 @@ export class DashboardService {
   async getTopProducts(limit = 5) {
     // Get all order items with their variants and products
     const orderItems = await this.db.orderItems.findMany({
-      where: { variant_id: { not: null }, order: { status: { in: ['delivered', 'completed'] } } },
+      where: {
+        variant_id: { not: null },
+        order: { status: { in: ["delivered", "completed"] } },
+      },
       select: {
         quantity: true,
         total_price_cents: true,
@@ -409,4 +412,3 @@ export class DashboardService {
     return Number((((current - previous) / previous) * 100).toFixed(1));
   }
 }
-

@@ -153,7 +153,7 @@ export const analyticsApi = {
    */
   getSalesSummary: async (
     period: "day" | "week" | "month" | "year" = "month",
-    days = 30
+    days = 30,
   ): Promise<SalesSummaryResponse> => {
     const response = await axios.get("/analytics/sales-summary", {
       params: { period, days },
@@ -164,7 +164,9 @@ export const analyticsApi = {
   /**
    * Get customer insights and segmentation
    */
-  getCustomerInsights: async (limit = 10): Promise<CustomerInsightsResponse> => {
+  getCustomerInsights: async (
+    limit = 10,
+  ): Promise<CustomerInsightsResponse> => {
     const response = await axios.get("/analytics/customer-insights", {
       params: { limit },
     });
@@ -175,7 +177,7 @@ export const analyticsApi = {
    * Get product performance metrics
    */
   getProductPerformance: async (
-    limit = 10
+    limit = 10,
   ): Promise<ProductPerformanceResponse> => {
     const response = await axios.get("/analytics/product-performance", {
       params: { limit },

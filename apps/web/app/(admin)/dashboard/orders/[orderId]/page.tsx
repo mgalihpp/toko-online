@@ -532,7 +532,11 @@ export default function OrderDetailPage() {
                   <p>{orderData?.address?.address_line2}</p>
                 )}
                 <p className="font-medium">
-                  {[orderData?.address?.city, orderData?.address?.province, orderData?.address?.postal_code]
+                  {[
+                    orderData?.address?.city,
+                    orderData?.address?.province,
+                    orderData?.address?.postal_code,
+                  ]
                     .filter(Boolean)
                     .join(", ")}
                 </p>

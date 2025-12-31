@@ -47,4 +47,3 @@ export const useRegencies = (provinceId: string | null) => {
     staleTime: 1000 * 60 * 60 * 24, // 24 jam
   });
 };
-

@@ -25,7 +25,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   },
   completed: { label: "Selesai", className: "bg-emerald-100 text-emerald-800" },
   cancelled: { label: "Dibatalkan", className: "bg-red-100 text-red-800" },
-  returned: { label: "Dikembalikan", className: "bg-orange-100 text-orange-800" },
+  returned: {
+    label: "Dikembalikan",
+    className: "bg-orange-100 text-orange-800",
+  },
 };
 
 export function RecentOrders() {

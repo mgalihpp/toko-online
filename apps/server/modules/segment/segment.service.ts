@@ -3,7 +3,10 @@ import type { CreateSegmentInput, UpdateSegmentInput } from "@repo/schema";
 import { AppError } from "@/utils/appError";
 import { BaseService } from "../service";
 
-export class SegmentService extends BaseService<CustomerSegment, "customerSegment"> {
+export class SegmentService extends BaseService<
+  CustomerSegment,
+  "customerSegment"
+> {
   constructor() {
     super("customerSegment");
   }

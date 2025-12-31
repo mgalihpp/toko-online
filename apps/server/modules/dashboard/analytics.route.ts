@@ -13,12 +13,18 @@ analyticsRouter.get("/sales-summary", AnalyticsController.getSalesSummary);
  * GET /api/v1/analytics/customer-insights
  * Get customer insights and segmentation
  */
-analyticsRouter.get("/customer-insights", AnalyticsController.getCustomerInsights);
+analyticsRouter.get(
+  "/customer-insights",
+  AnalyticsController.getCustomerInsights,
+);
 
 /**
  * GET /api/v1/analytics/product-performance
  * Get product performance metrics
  */
-analyticsRouter.get("/product-performance", AnalyticsController.getProductPerformance);
+analyticsRouter.get(
+  "/product-performance",
+  AnalyticsController.getProductPerformance,
+);
 
 export { analyticsRouter };

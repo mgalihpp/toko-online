@@ -53,7 +53,7 @@ export const auditLogApi = {
     if (params.end_date) searchParams.set("end_date", params.end_date);
 
     const res = await axios.get<ApiResponse<AuditLogsResponse>>(
-      `/audit-logs?${searchParams.toString()}`
+      `/audit-logs?${searchParams.toString()}`,
     );
     return res.data.data;
   },

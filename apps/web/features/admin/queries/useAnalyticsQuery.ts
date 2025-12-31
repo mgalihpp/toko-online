@@ -16,7 +16,7 @@ export const analyticsKeys = {
  */
 export function useSalesSummary(
   period: "day" | "week" | "month" | "year" = "month",
-  days = 30
+  days = 30,
 ) {
   return useQuery({
     queryKey: analyticsKeys.salesSummary(period, days),

@@ -102,7 +102,6 @@ export function DataTable<TData, TValue>({
           }
         : {}),
     },
-
   });
 
   /** 🔍 Fungsi bantu: ambil nilai nested seperti "user.name" */
@@ -150,7 +149,6 @@ export function DataTable<TData, TValue>({
   const handleSearch = (value: string) => {
     setGlobalFilter(value);
   };
-
 
   return (
     <div className="w-full space-y-4">
@@ -291,9 +289,7 @@ export function DataTable<TData, TValue>({
               }
             }}
             disabled={
-              isServerSide && page
-                ? page <= 1
-                : !table.getCanPreviousPage()
+              isServerSide && page ? page <= 1 : !table.getCanPreviousPage()
             }
           >
             Previous

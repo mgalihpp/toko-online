@@ -26,10 +26,16 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: "Menunggu", className: "bg-gray-100 text-gray-800" },
   processing: { label: "Diproses", className: "bg-yellow-100 text-yellow-800" },
   shipped: { label: "Dikirim", className: "bg-blue-100 text-blue-800" },
-  delivered: { label: "Terkirim", className: "bg-emerald-100 text-emerald-800" },
+  delivered: {
+    label: "Terkirim",
+    className: "bg-emerald-100 text-emerald-800",
+  },
   completed: { label: "Selesai", className: "bg-emerald-100 text-emerald-800" },
   cancelled: { label: "Dibatalkan", className: "bg-red-100 text-red-800" },
-  returned: { label: "Dikembalikan", className: "bg-orange-100 text-orange-800" },
+  returned: {
+    label: "Dikembalikan",
+    className: "bg-orange-100 text-orange-800",
+  },
 };
 
 export default function CustomerDetailPage() {
@@ -55,19 +61,19 @@ export default function CustomerDetailPage() {
   });
 
   useEffect(() => {
-    if(customerData){
+    if (customerData) {
       setCustomer({
         name: customerData.name,
         email: customerData.email,
         status: customerData.banned ? "Diblokir" : "Aktif",
-      })
+      });
       setFormData({
         name: customerData.name,
         email: customerData.email,
         status: customerData.banned ? "Diblokir" : "Aktif",
-      })
+      });
     }
-  }, [customerData])
+  }, [customerData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -296,12 +302,16 @@ export default function CustomerDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-            {customerData?.addresses.map((addr) => (
+              {customerData?.addresses.map((addr) => (
                 <div key={addr.id} className="p-4 border rounded-md space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{addr.label || "Alamat"}</span>
-                      {addr.is_default && <Badge variant="default">Utama</Badge>}
+                      <span className="font-medium">
+                        {addr.label || "Alamat"}
+                      </span>
+                      {addr.is_default && (
+                        <Badge variant="default">Utama</Badge>
+                      )}
                     </div>
                   </div>
                   <div className="text-sm space-y-1">
@@ -358,17 +368,22 @@ export default function CustomerDetailPage() {
                             {customerData.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(order.created_at ?? new Date()), {
-                              addSuffix: true,
-                              locale: idLocale,
-                            })}
+                            {formatDistanceToNow(
+                              new Date(order.created_at ?? new Date()),
+                              {
+                                addSuffix: true,
+                                locale: idLocale,
+                              },
+                            )}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-sm">
                             {formatCurrency(Number(order.total_cents))}
                           </p>
-                          <Badge className={status.className}>{status.label}</Badge>
+                          <Badge className={status.className}>
+                            {status.label}
+                          </Badge>
                         </div>
                       </Link>
                     );
@@ -426,7 +441,11 @@ export default function CustomerDetailPage() {
               <Button className="w-full bg-transparent" variant="outline">
                 Kirim Email
               </Button>
-              <Button className="w-full bg-transparent" variant="outline" onClick={() => router.push("/dashboard/orders")}>
+              <Button
+                className="w-full bg-transparent"
+                variant="outline"
+                onClick={() => router.push("/dashboard/orders")}
+              >
                 Liat semua pesanan
               </Button>
               <Link href="/dashboard/customers" className="block">

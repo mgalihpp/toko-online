@@ -17,13 +17,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import {
-  AlertTriangle,
-  Check,
-  Eye,
-  Star,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Check, Eye, Star, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { DataTable } from "@/features/admin/components/data-table";
@@ -135,7 +129,8 @@ export default function ReportedReviewsPage() {
             </TooltipTrigger>
             <TooltipContent>
               <p className="max-w-[300px]">
-                {row.original.report_reason || "Tidak ada alasan yang diberikan"}
+                {row.original.report_reason ||
+                  "Tidak ada alasan yang diberikan"}
               </p>
             </TooltipContent>
           </Tooltip>
@@ -204,7 +199,9 @@ export default function ReportedReviewsPage() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Ulasan Dilaporkan</h1>
+        <h1 className="text-3xl font-bold text-foreground">
+          Ulasan Dilaporkan
+        </h1>
         <p className="text-muted-foreground mt-2">
           Ulasan yang dilaporkan oleh pengguna dan memerlukan tindakan
         </p>

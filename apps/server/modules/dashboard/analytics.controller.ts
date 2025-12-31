@@ -10,7 +10,8 @@ export const AnalyticsController = {
    */
   getSalesSummary: async (req: Request, res: Response) => {
     try {
-      const period = (req.query.period as "day" | "week" | "month" | "year") || "month";
+      const period =
+        (req.query.period as "day" | "week" | "month" | "year") || "month";
       const days = parseInt(req.query.days as string) || 30;
 
       const [summary, trend, byCategory, byStatus] = await Promise.all([

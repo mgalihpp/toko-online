@@ -17,12 +17,7 @@ import {
   TabsTrigger,
 } from "@repo/ui/components/tabs";
 import { addDays } from "date-fns";
-import {
-  ArrowDown,
-  ArrowUp,
-  Download,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Download, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import {
@@ -53,12 +48,20 @@ export function ReportDashboard({ period, title }: ReportDashboardProps) {
 
   const queryParams = {
     period,
-    start_date: period === "custom" && dateRange?.from ? dateRange.from.toISOString() : undefined,
-    end_date: period === "custom" && dateRange?.to ? dateRange.to.toISOString() : undefined,
+    start_date:
+      period === "custom" && dateRange?.from
+        ? dateRange.from.toISOString()
+        : undefined,
+    end_date:
+      period === "custom" && dateRange?.to
+        ? dateRange.to.toISOString()
+        : undefined,
   };
 
-  const { data: salesReport, isLoading: isSalesLoading } = useSalesReport(queryParams);
-  const { data: financialReport, isLoading: isFinancialLoading } = useFinancialReport(queryParams);
+  const { data: salesReport, isLoading: isSalesLoading } =
+    useSalesReport(queryParams);
+  const { data: financialReport, isLoading: isFinancialLoading } =
+    useFinancialReport(queryParams);
 
   if (isSalesLoading || isFinancialLoading) {
     return <ReportDashboardSkeleton />;

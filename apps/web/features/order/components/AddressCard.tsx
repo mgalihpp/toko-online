@@ -21,9 +21,7 @@ export function AddressCard({
       <div className="space-y-2 text-muted-foreground">
         <p className="font-semibold text-foreground">{name}</p>
         <p>{addressLine}</p>
-        <p>
-          {[city, province, postalCode].filter(Boolean).join(", ")}
-        </p>
+        <p>{[city, province, postalCode].filter(Boolean).join(", ")}</p>
         <p>{phone}</p>
       </div>
     </div>

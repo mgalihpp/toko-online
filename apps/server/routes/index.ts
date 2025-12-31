@@ -159,4 +159,3 @@ v1Router.use("/audit-logs", auditLogRouter);
 v1Router.use("/users", userRouter);
 
 export default v1Router;
-

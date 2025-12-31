@@ -93,7 +93,7 @@ export const reportApi = {
     if (params.end_date) searchParams.set("end_date", params.end_date);
 
     const res = await axios.get<ApiResponse<SalesReport>>(
-      `/reports/sales?${searchParams.toString()}`
+      `/reports/sales?${searchParams.toString()}`,
     );
     return res.data.data;
   },
@@ -101,14 +101,16 @@ export const reportApi = {
   /**
    * Get financial report
    */
-  getFinancialReport: async (params: ReportParams): Promise<FinancialReport> => {
+  getFinancialReport: async (
+    params: ReportParams,
+  ): Promise<FinancialReport> => {
     const searchParams = new URLSearchParams();
     searchParams.set("period", params.period);
     if (params.start_date) searchParams.set("start_date", params.start_date);
     if (params.end_date) searchParams.set("end_date", params.end_date);
 
     const res = await axios.get<ApiResponse<FinancialReport>>(
-      `/reports/financial?${searchParams.toString()}`
+      `/reports/financial?${searchParams.toString()}`,
     );
     return res.data.data;
   },

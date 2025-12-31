@@ -137,7 +137,7 @@ export function SalesSummary() {
 
   const { summary, trend, byCategory, byStatus } = data;
 
-  const periodLabels: Record<string, string> = {
+  const periodLabels = {
     day: "Hari Ini",
     week: "Minggu Ini",
     month: "Bulan Ini",

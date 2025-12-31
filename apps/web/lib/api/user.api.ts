@@ -36,7 +36,7 @@ export const userApi = {
     if (params.role) searchParams.set("role", params.role);
 
     const res = await axios.get<ApiResponse<UsersResponse>>(
-      `/users?${searchParams.toString()}`
+      `/users?${searchParams.toString()}`,
     );
     return res.data.data;
   },

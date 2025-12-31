@@ -10,7 +10,13 @@ import {
 } from "@repo/ui/components/dropdown-menu";
 import { cn } from "@repo/ui/lib/utils";
 import { format } from "date-fns";
-import { CheckCircle, ChevronDown, Flag, MoreHorizontal, Star } from "lucide-react";
+import {
+  CheckCircle,
+  ChevronDown,
+  Flag,
+  MoreHorizontal,
+  Star,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useReportReview } from "@/features/admin/queries/useReviewQuery";
 import type { ProductWithRelations } from "@/types/index";
@@ -25,9 +31,10 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
   const reportReviewMutation = useReportReview();
 
   const handleReportReview = (reviewId: string) => {
-    reportReviewMutation.mutate(
-      { id: reviewId, reason: "Dilaporkan oleh pengguna" },
-    );
+    reportReviewMutation.mutate({
+      id: reviewId,
+      reason: "Dilaporkan oleh pengguna",
+    });
   };
 
   const toggleSection = (section: string) => {
@@ -149,7 +156,10 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                       ? (count / ratingSummary.reviewCount) * 100
                       : 0;
                   return (
-                    <div key={star} className="flex items-center gap-2 sm:gap-3">
+                    <div
+                      key={star}
+                      className="flex items-center gap-2 sm:gap-3"
+                    >
                       <span className="text-xs sm:text-sm w-3">{star}</span>
                       <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                       <div className="flex-1 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
@@ -212,7 +222,11 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Menu ulasan</span>
                           </Button>
@@ -230,7 +244,9 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                     </div>
                   </div>
                   {review.title && (
-                    <p className="font-medium text-sm sm:text-base mb-2">{review.title}</p>
+                    <p className="font-medium text-sm sm:text-base mb-2">
+                      {review.title}
+                    </p>
                   )}
                   {review.body && (
                     <p className="text-muted-foreground text-xs sm:text-sm">

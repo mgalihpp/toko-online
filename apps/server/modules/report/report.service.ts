@@ -318,7 +318,7 @@ export class ReportService {
       const returnTotal = ret.return_items.reduce((itemSum, item) => {
         // Calculate refund per item: quantity * unit_price
         const price = Number(item.order_item?.unit_price_cents || 0);
-        return itemSum + (price * item.quantity);
+        return itemSum + price * item.quantity;
       }, 0);
       return sum + returnTotal;
     }, 0);
