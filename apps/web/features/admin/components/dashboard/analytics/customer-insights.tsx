@@ -101,15 +101,13 @@ export function CustomerInsights() {
       {
         accessorKey: "orderCount",
         header: "Total Pesanan",
-        cell: ({ row }) => (
-          <div className="text-right">{row.original.orderCount}</div>
-        ),
+        cell: ({ row }) => <div>{row.original.orderCount}</div>,
       },
       {
         accessorKey: "lifetimeSpent",
         header: "Total Belanja",
         cell: ({ row }) => (
-          <div className="text-right font-medium">
+          <div className="font-medium">
             {formatCurrency(row.original.lifetimeSpent)}
           </div>
         ),
@@ -118,7 +116,7 @@ export function CustomerInsights() {
         accessorKey: "joinedAt",
         header: "Bergabung",
         cell: ({ row }) => (
-          <div className="text-right text-muted-foreground">
+          <div className="text-muted-foreground">
             {new Date(row.original.joinedAt).toLocaleDateString("id-ID", {
               day: "numeric",
               month: "short",
