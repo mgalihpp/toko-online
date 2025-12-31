@@ -169,7 +169,9 @@ export const AddressSection = () => {
                   <p className="text-foreground">{address.phone}</p>
                   <p className="text-foreground">{address.address_line1}</p>
                   <p className="text-foreground">
-                    {address.city}, {address.postal_code}
+                    {[address.city, address.province, address.postal_code]
+                      .filter(Boolean)
+                      .join(", ")}
                   </p>
                 </div>
 

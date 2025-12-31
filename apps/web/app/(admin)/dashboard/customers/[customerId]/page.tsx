@@ -296,12 +296,30 @@ export default function CustomerDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {customerData?.addresses.map((addr) => (
-                <div key={addr.id} className="p-3 border rounded-md">
-                  <div className="flex items-center justify-between mb-2">
-                    {addr.is_default && <Badge variant="default">Utama</Badge>}
+            {customerData?.addresses.map((addr) => (
+                <div key={addr.id} className="p-4 border rounded-md space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{addr.label || "Alamat"}</span>
+                      {addr.is_default && <Badge variant="default">Utama</Badge>}
+                    </div>
                   </div>
-                  <p className="text-sm">{addr.address_line1}</p>
+                  <div className="text-sm space-y-1">
+                    <p className="font-medium">{addr.recipient_name}</p>
+                    {addr.phone && (
+                      <p className="text-muted-foreground">{addr.phone}</p>
+                    )}
+                    <p>{addr.address_line1}</p>
+                    {addr.address_line2 && <p>{addr.address_line2}</p>}
+                    <p>
+                      {[addr.city, addr.province, addr.postal_code]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                    {addr.country && addr.country !== "Indonesia" && (
+                      <p>{addr.country}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </CardContent>

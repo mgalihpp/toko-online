@@ -359,6 +359,7 @@ const OrderDetails = () => {
                 name={orderData?.address?.recipient_name}
                 addressLine={orderData?.address?.address_line1}
                 city={orderData?.address?.city}
+                province={orderData?.address?.province}
                 postalCode={orderData?.address?.postal_code}
                 phone={orderData?.address?.phone}
               />

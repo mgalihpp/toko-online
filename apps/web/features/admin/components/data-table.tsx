@@ -49,6 +49,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   searchPlaceholder?: string;
   searchKey?: string | string[];
+  stickyLastColumn?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -56,6 +57,7 @@ export function DataTable<TData, TValue>({
   data,
   searchPlaceholder = "Search...",
   searchKey = "name",
+  stickyLastColumn = true,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -160,7 +162,7 @@ export function DataTable<TData, TValue>({
                       key={header.id}
                       className={cn(
                         "whitespace-nowrap",
-                        isLast &&
+                        stickyLastColumn && isLast &&
                           "sticky right-0 bg-background/95 backdrop-blur z-20 border-l shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]",
                       )}
                     >
@@ -197,7 +199,7 @@ export function DataTable<TData, TValue>({
                       <TableCell
                         key={cell.id}
                         className={cn(
-                          isLast &&
+                          stickyLastColumn && isLast &&
                             "sticky right-0 bg-background/95 backdrop-blur z-10 border-l shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]",
                         )}
                       >

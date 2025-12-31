@@ -2,6 +2,7 @@ type AddressCardProps = {
   name?: string | null;
   addressLine?: string | null;
   city?: string | null;
+  province?: string | null;
   postalCode?: string | null;
   phone?: string | null;
 };
@@ -10,6 +11,7 @@ export function AddressCard({
   name,
   addressLine,
   city,
+  province,
   postalCode,
   phone,
 }: AddressCardProps) {
@@ -20,7 +22,7 @@ export function AddressCard({
         <p className="font-semibold text-foreground">{name}</p>
         <p>{addressLine}</p>
         <p>
-          {city}, {postalCode}
+          {[city, province, postalCode].filter(Boolean).join(", ")}
         </p>
         <p>{phone}</p>
       </div>

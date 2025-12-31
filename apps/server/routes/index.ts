@@ -3,6 +3,7 @@ import { addressRouter } from "@/modules/address/address.route";
 import { categoriesRouter } from "@/modules/categories/categories.route";
 import { couponRouter } from "@/modules/coupon/coupon.route";
 import { customerRouter } from "@/modules/customer/customer.route";
+import { analyticsRouter } from "@/modules/dashboard/analytics.route";
 import { dashboardRouter } from "@/modules/dashboard/dashboard.route";
 import { inventoryRouter } from "@/modules/inventory/inventory.route";
 import { notificationRouter } from "@/modules/notification/notification.route";
@@ -37,6 +38,12 @@ const v1Router: Router = Router();
  * Semua route yang berhubungan dengan statistik dan analytics dashboard admin.
  */
 v1Router.use("/dashboard", dashboardRouter);
+
+/**
+ * Route ini menangani semua endpoint terkait analytics.
+ * Semua route yang berhubungan dengan analytics lanjutan untuk admin.
+ */
+v1Router.use("/analytics", analyticsRouter);
 
 /**
  * Route ini menangani semua endpoint terkait produk.

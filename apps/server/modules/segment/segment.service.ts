@@ -1,10 +1,12 @@
 import type { CustomerSegment } from "@repo/db";
-import { db } from "@repo/db";
 import type { CreateSegmentInput, UpdateSegmentInput } from "@repo/schema";
 import { AppError } from "@/utils/appError";
+import { BaseService } from "../service";
 
-export class SegmentService {
-  private db = db;
+export class SegmentService extends BaseService<CustomerSegment, "customerSegment"> {
+  constructor() {
+    super("customerSegment");
+  }
 
   /**
    * Get all segments

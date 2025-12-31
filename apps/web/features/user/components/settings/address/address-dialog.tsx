@@ -2,6 +2,7 @@ import type { Addresses } from "@repo/db";
 import { updateAddressSchema } from "@repo/schema/addressSchema";
 import { Button } from "@repo/ui/components/button";
 import { Checkbox } from "@repo/ui/components/checkbox";
+import { Combobox } from "@repo/ui/components/combobox";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ import {
   useAddAddress,
   useUpdateAddress,
 } from "@/features/user/queries/useAddressQuery";
+import { useProvinces, useRegencies } from "@/hooks/use-region";
 
 interface AddressDialogProps {
   open: boolean;
@@ -59,13 +61,20 @@ const AddressDialog = ({
     phone: "",
     label: "",
     country: "",
+    province: "",
     is_default: false,
     address_line1: "",
     city: "",
     postal_code: "",
   });
+  const [provinceId, setProvinceId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isMobile = useIsMobile();
+
+  // Fetch provinces and regencies from API
+  const { data: provinces, isLoading: isLoadingProvinces } = useProvinces();
+  const { data: regencies, isLoading: isLoadingRegencies } =
+    useRegencies(provinceId);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
@@ -75,25 +84,38 @@ const AddressDialog = ({
         phone: editAddress.phone ?? "",
         label: editAddress.label ?? "",
         country: editAddress.country ?? "Indonesia",
+        province: editAddress.province ?? "",
         is_default: !!editAddress.is_default,
         address_line1: editAddress.address_line1 ?? "",
         city: editAddress.city ?? "",
         postal_code: editAddress.postal_code ?? "",
       });
+      // Find provinceId based on province name for editing
+      if (provinces && editAddress.province) {
+        const found = provinces.find(
+          (p) => p.name.toLowerCase() === editAddress.province?.toLowerCase(),
+        );
+        if (found) {
+          setProvinceId(found.id);
+        }
+      }
     } else {
       setFormData({
         recipient_name: formData.recipient_name,
         phone: formData.phone,
         label: formData.label,
         country: "Indonesia",
+        province: formData.province,
         is_default: formData.is_default,
         address_line1: formData.address_line1,
         city: formData.city,
         postal_code: formData.postal_code,
       });
+      // Reset provinceId when adding new address
+      setProvinceId(null);
     }
     setErrors({});
-  }, [editAddress]);
+  }, [editAddress, provinces]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +136,7 @@ const AddressDialog = ({
           phone: formData.phone,
           label: formData.label,
           country: "Indonesia",
+          province: formData.province,
           is_default: formData.is_default,
           address_line1: formData.address_line1,
           city: formData.city,
@@ -213,37 +236,73 @@ const AddressDialog = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="city">Kota *</Label>
-          <Input
-            id="city"
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            className="mt-2"
-            placeholder="Bandung"
-            aria-invalid={!!errors.city}
-          />
+          <Label htmlFor="province">Provinsi *</Label>
+          <div className="mt-2">
+            <Combobox
+              options={
+                provinces?.map((p) => ({ value: p.id, label: p.name })) || []
+              }
+              value={provinceId || ""}
+              onValueChange={(value) => {
+                const selectedProvince = provinces?.find((p) => p.id === value);
+                setProvinceId(value);
+                setFormData({
+                  ...formData,
+                  province: selectedProvince?.name || "",
+                  city: "",
+                });
+              }}
+              placeholder="Pilih Provinsi"
+              searchPlaceholder="Cari provinsi..."
+              emptyText="Provinsi tidak ditemukan."
+              isLoading={isLoadingProvinces}
+            />
+          </div>
+          {errors.province && (
+            <p className="text-sm text-destructive mt-1">{errors.province}</p>
+          )}
+        </div>
+        <div>
+          <Label htmlFor="city">Kota/Kabupaten *</Label>
+          <div className="mt-2">
+            <Combobox
+              options={
+                regencies?.map((r) => ({ value: r.name, label: r.name })) || []
+              }
+              value={formData.city}
+              onValueChange={(value) =>
+                setFormData({ ...formData, city: value })
+              }
+              placeholder={
+                !provinceId ? "Pilih provinsi dulu" : "Pilih Kota/Kabupaten"
+              }
+              searchPlaceholder="Cari kota/kabupaten..."
+              emptyText="Kota/Kabupaten tidak ditemukan."
+              disabled={!provinceId}
+              isLoading={isLoadingRegencies}
+            />
+          </div>
           {errors.city && (
             <p className="text-sm text-destructive mt-1">{errors.city}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="postalCode">Kode Pos *</Label>
-          <Input
-            id="postalCode"
-            value={formData.postal_code}
-            onChange={(e) =>
-              setFormData({ ...formData, postal_code: e.target.value })
-            }
-            className="mt-2"
-            placeholder="12345"
-            aria-invalid={!!errors.postal_code}
-          />
-          {errors.postal_code && (
-            <p className="text-sm text-destructive mt-1">
-              {errors.postal_code}
-            </p>
-          )}
-        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="postalCode">Kode Pos *</Label>
+        <Input
+          id="postalCode"
+          value={formData.postal_code}
+          onChange={(e) =>
+            setFormData({ ...formData, postal_code: e.target.value })
+          }
+          className="mt-2"
+          placeholder="12345"
+          aria-invalid={!!errors.postal_code}
+        />
+        {errors.postal_code && (
+          <p className="text-sm text-destructive mt-1">{errors.postal_code}</p>
+        )}
       </div>
 
       <div className="flex items-center space-x-2">

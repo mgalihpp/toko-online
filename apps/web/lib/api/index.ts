@@ -1,4 +1,5 @@
 import { addressApi } from "./address.api";
+import { analyticsApi } from "./analytics.api";
 import { categoryApi } from "./category.api";
 import { couponApi } from "./coupon.api";
 import { customerApi } from "./customer.api";
@@ -22,6 +23,7 @@ export const api = {
   customer: customerApi,
   notification: notificationApi,
   dashboard: dashboardApi,
+  analytics: analyticsApi,
   segment: segmentApi,
   supplier: supplierApi,
   inventory: inventoryApi,
