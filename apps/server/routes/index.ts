@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { addressRouter } from "@/modules/address/address.route";
+import auditLogRouter from "@/modules/audit/audit-log.routes";
 import { categoriesRouter } from "@/modules/categories/categories.route";
 import { couponRouter } from "@/modules/coupon/coupon.route";
 import { customerRouter } from "@/modules/customer/customer.route";
@@ -10,6 +11,7 @@ import { notificationRouter } from "@/modules/notification/notification.route";
 import { orderRouter } from "@/modules/order/order.route";
 import { paymentRouter } from "@/modules/payment/payment.route";
 import { productRouter } from "@/modules/product/product.route";
+import reportRouter from "@/modules/report/report.routes";
 import { returnRouter } from "@/modules/return/return.route";
 import { reviewRouter } from "@/modules/review/review.route";
 import { segmentRouter } from "@/modules/segment/segment.route";
@@ -136,4 +138,19 @@ v1Router.use("/returns", returnRouter);
  */
 v1Router.use("/reviews", reviewRouter);
 
+/**
+ * Route ini menangani semua endpoint terkait reports.
+ * Semua route yang berhubungan dengan laporan penjualan dan keuangan.
+ * dikelola di dalam router ini.
+ */
+v1Router.use("/reports", reportRouter);
+
+/**
+ * Route ini menangani semua endpoint terkait audit logs.
+ * Semua route yang berhubungan dengan log aktivitas sistem dan user.
+ * dikelola di dalam router ini.
+ */
+v1Router.use("/audit-logs", auditLogRouter);
+
 export default v1Router;
+
