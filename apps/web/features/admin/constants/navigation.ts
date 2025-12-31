@@ -1,9 +1,7 @@
 import {
-  AudioWaveform,
   BarChart,
   Box,
   ClipboardList,
-  Command,
   GalleryVerticalEnd,
   Grid,
   LineChart,
@@ -22,17 +20,7 @@ export const ADMIN_NAV_DATA = {
     {
       name: "TryWear",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "TryWear",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "TryWear",
-      logo: Command,
-      plan: "Free",
+      plan: "Admin Dashboard",
     },
   ],
   navMain: [

@@ -16,6 +16,7 @@ import { returnRouter } from "@/modules/return/return.route";
 import { reviewRouter } from "@/modules/review/review.route";
 import { segmentRouter } from "@/modules/segment/segment.route";
 import { supplierRouter } from "@/modules/supplier/supplier.route";
+import { userRouter } from "@/modules/user/user.routes";
 
 /**
  * Router utama untuk versi 1 (v1) dari API.
@@ -151,6 +152,11 @@ v1Router.use("/reports", reportRouter);
  * dikelola di dalam router ini.
  */
 v1Router.use("/audit-logs", auditLogRouter);
+
+/**
+ * Route ini menangani manajemen user (admin roles).
+ */
+v1Router.use("/users", userRouter);
 
 export default v1Router;
 

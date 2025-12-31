@@ -9,15 +9,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
-import { Skeleton } from "@repo/ui/components/skeleton";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Eye, MoreHorizontal, Search } from "lucide-react";
+import { Eye, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DataTable } from "@/features/admin/components/data-table";
+import { DataTableSkeleton } from "@/features/admin/components/data-table-skeleton";
 import { useAuditLogs } from "@/features/admin/queries/useAuditLogQuery";
-import { formatCurrency } from "@/features/admin/utils";
 import type { AuditLog } from "@/lib/api/audit-log.api";
 
 export const columns: ColumnDef<AuditLog>[] = [
@@ -63,6 +62,7 @@ export const columns: ColumnDef<AuditLog>[] = [
   },
   {
     id: "actions",
+    header: "Aksi",
     cell: ({ row }) => {
       const log = row.original;
 
@@ -113,12 +113,7 @@ export function AuditLogTable({ userId, action, type }: AuditLogTableProps) {
   const meta = data?.meta;
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-[400px] w-full" />
-      </div>
-    );
+    return <DataTableSkeleton columns={6} />;
   }
 
   return (

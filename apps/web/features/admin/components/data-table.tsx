@@ -42,7 +42,7 @@ import {
   ChevronDown,
   Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -50,6 +50,10 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string;
   searchKey?: string | string[];
   stickyLastColumn?: boolean;
+  page?: number;
+  pageCount?: number;
+  onPageChange?: (page: number) => void;
+  onSearch?: (term: string) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -58,6 +62,10 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Search...",
   searchKey = "name",
   stickyLastColumn = true,
+  page,
+  pageCount,
+  onPageChange,
+  onSearch,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -65,9 +73,13 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
 
+  const isServerSide = typeof pageCount === "number";
+
   const table = useReactTable({
     data,
     columns,
+    pageCount: isServerSide ? (pageCount ?? -1) : undefined,
+    manualPagination: isServerSide,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -81,7 +93,16 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
+      ...(isServerSide && page !== undefined
+        ? {
+            pagination: {
+              pageIndex: page - 1,
+              pageSize: 10,
+            },
+          }
+        : {}),
     },
+
   });
 
   /** 🔍 Fungsi bantu: ambil nilai nested seperti "user.name" */
@@ -89,9 +110,10 @@ export function DataTable<TData, TValue>({
     return path.split(".").reduce((acc, key) => acc?.[key], obj);
   };
 
-  /** 🔎 Filter data secara manual */
+  /** 🔎 Filter data secara manual (Client Side Only) */
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const filteredData = useMemo(() => {
+    if (isServerSide) return data; // Skip filtering if server-side
     if (!globalFilter) return data;
     const keys = Array.isArray(searchKey) ? searchKey : [searchKey];
     const search = globalFilter.toLowerCase();
@@ -102,7 +124,7 @@ export function DataTable<TData, TValue>({
         return value?.toString().toLowerCase().includes(search);
       }),
     );
-  }, [data, globalFilter, searchKey]);
+  }, [data, globalFilter, searchKey, isServerSide]);
 
   table.setOptions((prev) => ({
     ...prev,
@@ -115,6 +137,21 @@ export function DataTable<TData, TValue>({
     return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
   };
 
+  useEffect(() => {
+    if (!onSearch) return;
+
+    const timeoutId = setTimeout(() => {
+      onSearch(globalFilter);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [globalFilter, onSearch]);
+
+  const handleSearch = (value: string) => {
+    setGlobalFilter(value);
+  };
+
+
   return (
     <div className="w-full space-y-4">
       <div className="flex items-center gap-4">
@@ -123,7 +160,7 @@ export function DataTable<TData, TValue>({
           <Input
             placeholder={searchPlaceholder}
             value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -162,7 +199,8 @@ export function DataTable<TData, TValue>({
                       key={header.id}
                       className={cn(
                         "whitespace-nowrap",
-                        stickyLastColumn && isLast &&
+                        stickyLastColumn &&
+                          isLast &&
                           "sticky right-0 bg-background/95 backdrop-blur z-20 border-l shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]",
                       )}
                     >
@@ -199,7 +237,8 @@ export function DataTable<TData, TValue>({
                       <TableCell
                         key={cell.id}
                         className={cn(
-                          stickyLastColumn && isLast &&
+                          stickyLastColumn &&
+                            isLast &&
                             "sticky right-0 bg-background/95 backdrop-blur z-10 border-l shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]",
                         )}
                       >
@@ -227,22 +266,53 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
         <div className="text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} row(s) total
+          {/* Untuk server side, kita pakai total data dari props pageCount (if available) or something else. 
+              Tapi pageCount in tanstack is just total Pages. 
+              Usually we want 'rows total'. 
+              For now keep client side count logic or improvement needed? 
+              Existing: table.getFilteredRowModel().rows.length.
+              Client side: shows current page rows count if paginated? NO getFilteredRowModel returns ALL filtered rows.
+              Server side: data.length is only current page rows.
+              Let's just show current page info for server side.
+           */}
+          {isServerSide
+            ? `Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount()}`
+            : `${table.getFilteredRowModel().rows.length} row(s) total`}
         </div>
         <div className="space-x-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => {
+              if (isServerSide && onPageChange && page) {
+                onPageChange(page - 1);
+              } else {
+                table.previousPage();
+              }
+            }}
+            disabled={
+              isServerSide && page
+                ? page <= 1
+                : !table.getCanPreviousPage()
+            }
           >
             Previous
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => {
+              if (isServerSide && onPageChange && page) {
+                onPageChange(page + 1);
+              } else {
+                table.nextPage();
+              }
+            }}
+            disabled={
+              isServerSide && page && pageCount
+                ? page >= pageCount
+                : !table.getCanNextPage()
+            }
           >
             Next
           </Button>
