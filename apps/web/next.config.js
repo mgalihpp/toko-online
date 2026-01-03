@@ -8,6 +8,9 @@ const nextConfig = {
       },
     ],
   },
+  optimizePackageImports: [
+    "@prisma/client",
+  ],
 };
 
 export default nextConfig;
