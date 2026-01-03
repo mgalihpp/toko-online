@@ -44,7 +44,7 @@ export default function LoginForm() {
     }
 
     if (data) {
-      setSuccess("Sign in successful! Redirecting...");
+      setSuccess("Masuk berhasil! Mengalihkan...");
       setIsLoading(false);
     }
   };
@@ -71,14 +71,14 @@ export default function LoginForm() {
       {/* Email Field */}
       <div className="space-y-2">
         <label htmlFor="email" className="text-sm font-medium text-foreground">
-          Email Address
+          Alamat Email
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="anda@contoh.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10"
@@ -133,7 +133,7 @@ export default function LoginForm() {
             htmlFor="remember"
             className="text-sm text-muted-foreground cursor-pointer"
           >
-            Remember me
+            Ingat saya
           </label>
         </div>
 
@@ -142,7 +142,7 @@ export default function LoginForm() {
             href="/forgot-password"
             className="text-primary hover:underline font-medium"
           >
-            Forgot password?
+            Lupa password?
           </Link>
         </div>
       </div>
@@ -158,10 +158,10 @@ export default function LoginForm() {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Signing in...
+            Masuk...
           </>
         ) : (
-          "Sign In"
+          "Masuk"
         )}
       </Button>
     </form>

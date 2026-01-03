@@ -17,7 +17,7 @@ export default function SocialLoginButtons() {
       });
     } catch (error) {
       console.error(`Login with ${provider} failed:`, error);
-      toast.error("An unexpected error occurred. Please try again.");
+      toast.error("Terjadi kesalahan yang tidak terduga. Silakan coba lagi.");
     } finally {
       setLoadingProvider(null);
     }
@@ -30,7 +30,7 @@ export default function SocialLoginButtons() {
         type="button"
         onClick={() => handleSocialLogin("google")}
         disabled={loadingProvider !== null}
-        aria-label="Login with Google"
+        aria-label="Masuk dengan Google"
         className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
       >
         {loadingProvider === "google" ? (
@@ -62,7 +62,7 @@ export default function SocialLoginButtons() {
         type="button"
         onClick={() => handleSocialLogin("github")}
         disabled={loadingProvider !== null}
-        aria-label="Login with GitHub"
+        aria-label="Masuk dengan GitHub"
         className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
       >
         {loadingProvider === "github" ? (
@@ -79,7 +79,7 @@ export default function SocialLoginButtons() {
         type="button"
         onClick={() => handleSocialLogin("apple")}
         disabled={loadingProvider !== null}
-        aria-label="Login with Apple"
+        aria-label="Masuk dengan Apple"
         className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
       >
         {loadingProvider === "apple" ? (
@@ -100,7 +100,7 @@ export default function SocialLoginButtons() {
         type="button"
         onClick={() => handleSocialLogin("microsoft")}
         disabled={loadingProvider !== null}
-        aria-label="Login with Microsoft"
+        aria-label="Masuk dengan Microsoft"
         className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
       >
         {loadingProvider === "microsoft" ? (

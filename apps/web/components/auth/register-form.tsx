@@ -84,31 +84,31 @@ export default function RegisterForm() {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      setError("Please fill in all fields");
+      setError("Silakan isi semua kolom");
       setIsLoading(false);
       return;
     }
 
     if (!formData.email.includes("@")) {
-      setError("Please enter a valid email address");
+      setError("Silakan masukkan alamat email yang valid");
       setIsLoading(false);
       return;
     }
 
     if (!passwordValidation.isValid) {
-      setError("Password does not meet requirements");
+      setError("Password tidak memenuhi persyaratan");
       setIsLoading(false);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError("Password tidak cocok");
       setIsLoading(false);
       return;
     }
 
     if (!agreeToTerms) {
-      setError("You must agree to the Terms of Service");
+      setError("Anda harus menyetujui Syarat Layanan");
       setIsLoading(false);
       return;
     }
@@ -134,7 +134,7 @@ export default function RegisterForm() {
 
     if (data) {
       setSuccess(
-        "Account created successfully! Please check your email to verify your account.",
+        "Akun berhasil dibuat! Silakan periksa email Anda untuk verifikasi.",
       );
       reset();
       setIsLoading(false);
@@ -165,7 +165,7 @@ export default function RegisterForm() {
           htmlFor="fullName"
           className="text-sm font-medium text-foreground"
         >
-          Full Name
+          Nama Lengkap
         </label>
         <div className="relative">
           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -184,7 +184,7 @@ export default function RegisterForm() {
 
       <div className="space-y-2">
         <label htmlFor="email" className="text-sm font-medium text-foreground">
-          Email Address
+          Alamat Email
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -192,7 +192,7 @@ export default function RegisterForm() {
             id="email"
             name="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="anda@contoh.com"
             value={formData.email}
             onChange={handleChange}
             className="pl-10"
@@ -238,7 +238,7 @@ export default function RegisterForm() {
         {formData.password && (
           <div className="space-y-2 mt-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
             <p className="text-xs font-medium text-foreground">
-              Password Requirements:
+              Persyaratan Password:
             </p>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs">
@@ -256,7 +256,7 @@ export default function RegisterForm() {
                       : "text-muted-foreground"
                   }
                 >
-                  Uppercase letter
+                  Huruf besar
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -274,7 +274,7 @@ export default function RegisterForm() {
                       : "text-muted-foreground"
                   }
                 >
-                  Lowercase letter
+                  Huruf kecil
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -292,7 +292,7 @@ export default function RegisterForm() {
                       : "text-muted-foreground"
                   }
                 >
-                  Number
+                  Angka
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -310,7 +310,7 @@ export default function RegisterForm() {
                       : "text-muted-foreground"
                   }
                 >
-                  Special character (!@#$%^&*)
+                  Karakter spesial (!@#$%^&*)
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -328,7 +328,7 @@ export default function RegisterForm() {
                       : "text-muted-foreground"
                   }
                 >
-                  At least 8 characters
+                  Minimal 8 karakter
                 </span>
               </div>
             </div>
@@ -341,7 +341,7 @@ export default function RegisterForm() {
           htmlFor="confirmPassword"
           className="text-sm font-medium text-foreground"
         >
-          Confirm Password
+          Konfirmasi Password
         </label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -382,7 +382,7 @@ export default function RegisterForm() {
           htmlFor="terms"
           className="text-sm text-muted-foreground cursor-pointer"
         >
-          I agree to the Terms of Service and Privacy Policy
+          Saya setuju dengan Syarat Layanan dan Kebijakan Privasi
         </label>
       </div>
 
@@ -395,10 +395,10 @@ export default function RegisterForm() {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating Account...
+            Membuat Akun...
           </>
         ) : (
-          "Create Account"
+          "Buat Akun"
         )}
       </Button>
     </form>

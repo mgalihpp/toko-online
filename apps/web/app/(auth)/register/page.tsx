@@ -22,7 +22,9 @@ export default function RegisterPage() {
           {/* Logo/Brand */}
           <div className="relative z-10">
             <h2 className="text-3xl font-bold text-white mb-2">TryWear</h2>
-            <p className="text-emerald-100">Join millions of happy shoppers</p>
+            <p className="text-emerald-100">
+              Bergabung dengan jutaan pembeli yang bahagia
+            </p>
           </div>
 
           {/* Hero Image */}
@@ -53,9 +55,9 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-white font-medium">Exclusive Deals</p>
+                <p className="text-white font-medium">Penawaran Eksklusif</p>
                 <p className="text-emerald-100 text-sm">
-                  Members-only discounts
+                  Diskon khusus anggota
                 </p>
               </div>
             </div>
@@ -74,9 +76,9 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-white font-medium">Easy Returns</p>
+                <p className="text-white font-medium">Pengembalian Mudah</p>
                 <p className="text-emerald-100 text-sm">
-                  30-day money-back guarantee
+                  Jaminan uang kembali 30 hari
                 </p>
               </div>
             </div>
@@ -95,9 +97,9 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-white font-medium">Loyalty Rewards</p>
+                <p className="text-white font-medium">Hadiah Loyalitas</p>
                 <p className="text-emerald-100 text-sm">
-                  Earn points on every purchase
+                  Dapatkan poin di setiap pembelian
                 </p>
               </div>
             </div>
@@ -109,20 +111,18 @@ export default function RegisterPage() {
             {/* Header */}
             <div className="mb-8 text-center">
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                Create Account
+                Buat Akun
               </h1>
               <p className="text-muted-foreground">
-                Join TryWear and start shopping today
+                Bergabung dengan TryWear dan mulai belanja hari ini
               </p>
             </div>
 
             {/* Register Card */}
             <Card className="border-0 shadow-none">
               <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl">Sign Up</CardTitle>
-                <CardDescription>
-                  Create a new account to get started
-                </CardDescription>
+                <CardTitle className="text-2xl">Daftar</CardTitle>
+                <CardDescription>Buat akun baru untuk memulai</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Register Form */}
@@ -135,7 +135,7 @@ export default function RegisterPage() {
                   </div>
                   <div className="relative flex justify-center text-sm">
                     <span className="px-2 bg-card text-muted-foreground">
-                      Or sign up with
+                      Atau daftar dengan
                     </span>
                   </div>
                 </div>
@@ -145,25 +145,26 @@ export default function RegisterPage() {
 
                 {/* Footer Links */}
                 <div className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
+                  Sudah punya akun?{" "}
                   <Link
                     href="/login"
                     className="text-primary hover:underline font-medium"
                   >
-                    Sign in
+                    Masuk
                   </Link>
                 </div>
 
                 {/* Terms */}
                 <p className="text-xs text-muted-foreground text-center">
-                  By signing up, you agree to our{" "}
+                  Dengan mendaftar, Anda menyetujui{" "}
                   <Link href="#" className="text-primary hover:underline">
-                    Terms of Service
+                    Syarat Layanan
                   </Link>{" "}
-                  and{" "}
+                  dan{" "}
                   <Link href="#" className="text-primary hover:underline">
-                    Privacy Policy
-                  </Link>
+                    Kebijakan Privasi
+                  </Link>{" "}
+                  kami
                 </p>
               </CardContent>
             </Card>
