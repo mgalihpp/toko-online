@@ -10,11 +10,7 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@repo/ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
 import { cn } from "@repo/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";

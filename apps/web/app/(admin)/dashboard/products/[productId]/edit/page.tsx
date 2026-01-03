@@ -38,9 +38,9 @@ import {
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Save } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
@@ -53,6 +53,7 @@ import { CurrencyInput } from "../../_components/currency-input";
 import { ProductImageUpload } from "../../_components/product-image-upload";
 import { ProductVariantsSection } from "../../_components/product-variant-sections";
 import { SupplierSelect } from "../../_components/supplier-select";
+import { EditProductSkeleton } from "./edit-product-skeleton";
 
 export default function EditProductPage() {
   const params = useParams();
@@ -73,6 +74,15 @@ export default function EditProductPage() {
     uploadProgress,
   } = useProductMediaUpload();
 
+  // Fetch product data first
+  const { data: productData, isPending } = useQuery({
+    queryKey: ["product", productId],
+    queryFn: () => api.product.getById(productId as string),
+  });
+
+  // Track if form has been initialized with product data
+  const isFormInitialized = useRef(false);
+
   const form = useForm<z.infer<typeof updateProductSchema>>({
     resolver: zodResolver(updateProductSchema),
     defaultValues: {
@@ -85,11 +95,6 @@ export default function EditProductPage() {
       category_id: undefined,
       supplier_id: undefined,
     },
-  });
-
-  const { data: productData, isPending } = useQuery({
-    queryKey: ["product", productId],
-    queryFn: () => api.product.getById(productId as string),
   });
 
   const updateProductMutation = useMutation({
@@ -203,10 +208,11 @@ export default function EditProductPage() {
       api.product.deleteVariant(variantId),
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (productData) {
-      // Memastikan untuk tidak double
-      setAttachments([]);
+    // Only reset form ONCE when productData first becomes available and hasn't been initialized yet
+    if (productData && !isFormInitialized.current) {
+      isFormInitialized.current = true;
 
       form.reset({
         title: productData.title ?? "",
@@ -214,11 +220,12 @@ export default function EditProductPage() {
         slug: productData.slug ?? "",
         description: productData.description ?? "",
         price_cents: Number(productData.price_cents ?? 0),
-        status: productData.status,
+        status: productData.status?.toLowerCase() || "draft",
         category_id: productData.category_id ?? undefined,
         supplier_id: productData.supplier_id ?? undefined,
       });
 
+      // Set attachments dari product images
       setAttachments(
         productData.product_images.map((i) => ({
           id: i.id,
@@ -229,7 +236,7 @@ export default function EditProductPage() {
         })),
       );
     }
-  }, [productData, form, setAttachments]);
+  }, [productData?.id]); // Hanya trigger ketika product ID berubah
 
   useEffect(() => {
     if (productData) {
@@ -293,11 +300,17 @@ export default function EditProductPage() {
     updateProductVariantsMutation.isPending ||
     attachments.some((a) => a.isUploading);
 
+  if (isPending) {
+    return <EditProductSkeleton />;
+  }
+
   return (
     <div className="p-0 md:p-8 space-y-6">
       <div className="max-md:p-4">
-        <h1 className="text-3xl font-bold text-foreground">Edit Product</h1>
-        <p className="text-muted-foreground mt-2">Update product information</p>
+        <h1 className="text-3xl font-bold text-foreground">Ubah Produk</h1>
+        <p className="text-muted-foreground mt-2">
+          Perbaharui informasi produk
+        </p>
       </div>
 
       <Form {...form}>
@@ -546,13 +559,21 @@ export default function EditProductPage() {
                   <FormField
                     control={form.control}
                     name="status"
-                    render={({ field, fieldState }) => (
-                      <FormItem>
-                        <FormLabel className="block text-sm font-medium mb-2">
-                          Status produk
-                        </FormLabel>
-                        <FormControl>
-                          <Select {...field} onValueChange={field.onChange}>
+                    render={({ field, fieldState }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel className="block text-sm font-medium mb-2">
+                            Status produk
+                          </FormLabel>
+                          <Select
+                            value={field.value || "draft"}
+                            onValueChange={(val) => {
+                              // Ignore empty value from Radix SelectBubbleInput bug
+                              if (val) {
+                                field.onChange(val);
+                              }
+                            }}
+                          >
                             <SelectTrigger
                               className="w-full"
                               aria-invalid={fieldState.invalid}
@@ -567,10 +588,10 @@ export default function EditProductPage() {
                               <SelectItem value="draft">Draft</SelectItem>
                             </SelectContent>
                           </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                   <div>
                     <Badge
@@ -580,7 +601,11 @@ export default function EditProductPage() {
                           : "secondary"
                       }
                     >
-                      {form.watch("status") ?? "Draf"}
+                      {form.watch("status") === "active"
+                        ? "Aktif"
+                        : form.watch("status") === "inactive"
+                          ? "Tidak Aktif"
+                          : "Draf"}
                     </Badge>
                   </div>
                 </CardContent>
@@ -596,8 +621,17 @@ export default function EditProductPage() {
                     className="w-full"
                     disabled={isUpdating}
                   >
-                    <Save />
-                    {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Simpan Perubahan
+                      </>
+                    )}
                   </Button>
                   <DeleteProductDialog productId={productId as string} />
                 </CardContent>

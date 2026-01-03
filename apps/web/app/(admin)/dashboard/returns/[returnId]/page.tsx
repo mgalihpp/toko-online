@@ -20,7 +20,7 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Check, ImageIcon, Package, RotateCcw, User, X } from "lucide-react";
+import { Check, ImageIcon, Package, User, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -151,7 +151,6 @@ export default function ReturnDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RotateCcw className="h-5 w-5" />
                 Informasi Pengembalian
               </CardTitle>
             </CardHeader>
@@ -168,7 +167,8 @@ export default function ReturnDetailPage() {
                       {
                         locale: id,
                       },
-                    )}
+                    )}{" "}
+                    WIB
                   </p>
                 </div>
                 <div>

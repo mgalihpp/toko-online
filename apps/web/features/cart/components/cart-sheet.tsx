@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Sheet,
@@ -11,7 +12,7 @@ import {
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Loader2, Minus, Plus, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   deleteCartItem,
   getOrCreateCart,
@@ -22,6 +23,7 @@ import { useCartStore } from "@/features/cart/store/useCartStore";
 import { useServerAction } from "@/hooks/useServerAction";
 
 const CartSheet = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const {
     items,
     loading: isCartLoading,
@@ -68,11 +70,11 @@ const CartSheet = () => {
           variant_id: ci.variant_id,
           name: product.title,
           image: imageUrl,
-          price: totalPriceCents, // simpan dalam cents dulu atau langsung konversi ke rupiah?
+          price: totalPriceCents,
           quantity: ci.quantity,
           color: (variant.option_values as any)?.color || undefined,
           size: (variant.option_values as any)?.size || undefined,
-          storage: variant.inventory[0]?.stock_quantity.toString(),
+          stock_quantity: variant.inventory[0]?.stock_quantity ?? 0,
         };
       });
       cartItems.forEach((ci) => {
@@ -138,7 +140,7 @@ const CartSheet = () => {
   }
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingBag className="h-5 w-5" />
@@ -211,10 +213,14 @@ const CartSheet = () => {
                         Ukuran: {item.size}
                       </p>
                     )}
-                    {item.storage && (
-                      <p className="text-xs text-muted-foreground">
-                        Stok: {item.storage}
-                      </p>
+                    {item.stock_quantity > 0 ? (
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        Stok {item.stock_quantity}
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="text-xs w-fit">
+                        Stok Habis
+                      </Badge>
                     )}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center border rounded-lg">
@@ -258,8 +264,10 @@ const CartSheet = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7 p-0 disabled:opacity-50"
+                          disabled={item.quantity >= item.stock_quantity}
                           onClick={async () => {
+                            if (item.quantity >= item.stock_quantity) return;
                             const newQty = item.quantity + 1;
 
                             updateQuantity(
@@ -292,10 +300,19 @@ const CartSheet = () => {
                 <span>{formatCurrency(totalPrice())}</span>
               </div>
               <div className="space-y-2">
-                <Button asChild className="w-full h-12">
+                <Button
+                  asChild
+                  className="w-full h-12"
+                  onClick={() => setIsOpen(false)}
+                >
                   <Link href="/checkout">Checkout</Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full h-12">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full h-12"
+                  onClick={() => setIsOpen(false)}
+                >
                   <Link href="/cart">Lihat Keranjang</Link>
                 </Button>
               </div>

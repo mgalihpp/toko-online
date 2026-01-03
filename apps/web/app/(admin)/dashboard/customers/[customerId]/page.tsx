@@ -254,12 +254,12 @@ export default function CustomerDetailPage() {
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-input rounded-md bg-background"
                     >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="Active">Aktif</option>
+                      <option value="Inactive">Tidak Aktif</option>
                     </select>
                   </div>
                   <Button onClick={handleSave} className="w-full">
-                    Save Changes
+                    Simpan Perubahan
                   </Button>
                 </>
               ) : (

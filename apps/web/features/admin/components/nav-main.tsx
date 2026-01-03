@@ -1,5 +1,7 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,6 +22,7 @@ import Link from "next/link";
 
 export function NavMain({
   items,
+  badges,
 }: {
   items: {
     title: string;
@@ -31,6 +34,7 @@ export function NavMain({
       url: string;
     }[];
   }[];
+  badges?: Record<string, number>;
 }) {
   return (
     <SidebarGroup>
@@ -67,6 +71,14 @@ export function NavMain({
                       <SidebarMenuSubButton asChild>
                         <Link href={`/dashboard${subItem.url}`}>
                           <span>{subItem.title}</span>
+                          {badges?.[subItem.url] ? (
+                            <Badge
+                              variant="warning"
+                              className="rounded-full ml-auto h-5 min-w-5 px-1 flex items-center justify-center text-[10px]"
+                            >
+                              {badges[subItem.url]}
+                            </Badge>
+                          ) : null}
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>

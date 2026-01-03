@@ -34,7 +34,7 @@ import {
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -492,7 +492,11 @@ export default function CreateProductPage() {
                           : "secondary"
                       }
                     >
-                      {form.watch("status") ?? "Draf"}
+                      {form.watch("status") === "active"
+                        ? "Aktif"
+                        : form.watch("status") === "inactive"
+                          ? "Tidak aktif"
+                          : "Draf"}
                     </Badge>
                   </div>
                 </CardContent>
@@ -513,8 +517,18 @@ export default function CreateProductPage() {
                       attachments.some((a) => a.isUploading)
                     }
                   >
-                    <Plus />
-                    Tambah Produk
+                    {createProductMutation.isPending ||
+                    createProductVariantsMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Tambah Produk
+                      </>
+                    )}
                   </Button>
                   <Link href="/dashboard/products" className="block">
                     <Button

@@ -3,6 +3,7 @@ import { snap } from "@/lib/midtrans";
 
 /**
  * Scheduler untuk mengecek dan membatalkan pembayaran yang sudah kadaluarsa
+ * serta mengupdate pembayaran yang sudah settlement
  * Berjalan setiap 5 menit
  */
 export class PaymentScheduler {
@@ -15,11 +16,11 @@ export class PaymentScheduler {
   start(): void {
     console.log("[PaymentScheduler] Starting...");
     // Jalankan sekali saat start
-    this.checkExpiredPayments();
+    this.checkPendingPayments();
 
     // Kemudian jalankan berulang setiap interval
     this.intervalId = setInterval(() => {
-      this.checkExpiredPayments();
+      this.checkPendingPayments();
     }, this.intervalMs);
 
     console.log(
@@ -39,10 +40,12 @@ export class PaymentScheduler {
   }
 
   /**
-   * Cek pembayaran pending dan batalkan yang sudah expire
+   * Cek pembayaran pending:
+   * - Batalkan yang sudah expire
+   * - Update yang sudah settlement
    */
-  private async checkExpiredPayments(): Promise<void> {
-    console.log("[PaymentScheduler] Checking expired payments...");
+  private async checkPendingPayments(): Promise<void> {
+    console.log("[PaymentScheduler] Checking pending payments...");
 
     try {
       // Ambil semua pembayaran pending
@@ -65,14 +68,28 @@ export class PaymentScheduler {
       );
 
       let cancelledCount = 0;
+      let settledCount = 0;
 
       for (const payment of pendingPayments) {
         try {
           // Cek status di Midtrans
           const status = await snap.transaction.status(payment.order_id);
 
-          // Jika status di Midtrans adalah expire atau cancel, update di database
+          // Jika status di Midtrans adalah settlement, update di database
           if (
+            status.transaction_status === "settlement" ||
+            status.transaction_status === "capture"
+          ) {
+            await this.confirmPaymentAndOrder(
+              payment.order_id,
+              status.transaction_status,
+              (status as any).settlement_time || status.transaction_time,
+              payment.order?.user_id,
+            );
+            settledCount++;
+          }
+          // Jika status di Midtrans adalah expire atau cancel, update di database
+          else if (
             status.transaction_status === "expire" ||
             status.transaction_status === "cancel" ||
             status.transaction_status === "deny"
@@ -127,9 +144,123 @@ export class PaymentScheduler {
           `[PaymentScheduler] Cancelled ${cancelledCount} expired payments`,
         );
       }
+      if (settledCount > 0) {
+        console.log(
+          `[PaymentScheduler] Confirmed ${settledCount} settled payments`,
+        );
+      }
     } catch (error) {
       console.error(
-        "[PaymentScheduler] Error checking expired payments:",
+        "[PaymentScheduler] Error checking pending payments:",
+        error,
+      );
+    }
+  }
+
+  /**
+   * Konfirmasi pembayaran yang sudah settlement dan update order ke processing
+   */
+  private async confirmPaymentAndOrder(
+    orderId: string,
+    status: string,
+    settlementTime: string | undefined,
+    userId?: string | null,
+  ): Promise<void> {
+    try {
+      const order = await db.orders.findUnique({
+        where: { id: orderId },
+        include: {
+          order_items: {
+            include: {
+              variant: {
+                include: { inventory: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!order) return;
+
+      await db.$transaction(async (tx) => {
+        // 1. Commit reserved stock (kurangi stock_quantity, reset reserved)
+        for (const item of order.order_items) {
+          if (!item.variant_id) continue;
+
+          const inventory = await tx.inventory.findUnique({
+            where: { variant_id: item.variant_id as string },
+          });
+
+          if (!inventory) continue;
+
+          await tx.inventory.update({
+            where: { variant_id: item.variant_id as string },
+            data: {
+              stock_quantity: {
+                decrement: item.quantity,
+              },
+              reserved_quantity: {
+                decrement: item.quantity,
+              },
+            },
+          });
+
+          // Log stock movement ke AuditLogs
+          await tx.auditLogs.create({
+            data: {
+              action: "STOCK_COMMITTED",
+              object_type: "INVENTORY",
+              object_id: item.variant_id as string,
+              metadata: {
+                variant_id: item.variant_id,
+                quantity_change: -item.quantity,
+                previous_stock: inventory.stock_quantity,
+                new_stock: inventory.stock_quantity - item.quantity,
+                reason: `Order ${orderId} payment confirmed via scheduler`,
+              },
+            },
+          });
+        }
+
+        // 2. Update status order ke processing
+        await tx.orders.update({
+          where: { id: orderId },
+          data: {
+            status: "processing",
+            updated_at: new Date(),
+          },
+        });
+
+        // 3. Update status payment ke settlement
+        await tx.payments.update({
+          where: { order_id: orderId },
+          data: {
+            status: "settlement",
+            paid_at: settlementTime ? new Date(settlementTime) : new Date(),
+          },
+        });
+
+        // 4. Buat notifikasi untuk user
+        if (userId) {
+          await tx.notifications.create({
+            data: {
+              user_id: userId,
+              type: "PAYMENT_SUCCESS",
+              payload: {
+                order_id: orderId,
+                reason: "payment_confirmed_by_scheduler",
+              },
+            },
+          });
+        }
+      });
+
+      console.log(
+        `[PaymentScheduler] Order ${orderId} confirmed as ${status} - updated to processing`,
+      );
+    } catch (error) {
+      console.error(
+        `[PaymentScheduler] Failed to confirm order ${orderId}:`,
         error,
       );
     }

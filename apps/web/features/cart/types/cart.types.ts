@@ -8,6 +8,7 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  stock_quantity: number; // Available stock for this variant
   storage?: string;
   color?: string;
   size?: string;

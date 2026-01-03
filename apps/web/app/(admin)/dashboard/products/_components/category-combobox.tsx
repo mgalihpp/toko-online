@@ -202,7 +202,7 @@ export function CategoryCombobox({
               </Label>
               <Input
                 id="category-name"
-                placeholder="e.g., Pet Supplies"
+                placeholder="e.g., T-Shirt"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => {

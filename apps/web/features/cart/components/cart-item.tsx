@@ -1,8 +1,10 @@
 "use client";
 
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 import {
   deleteCartItem,
   updateQuantity as updateCartItemQuantity,
@@ -23,7 +25,16 @@ export function CartItem({ item }: CartItemProps) {
   );
   const [runDeleteCartItemAction] = useServerAction(deleteCartItem);
 
+  // Stock validation
+  const canIncrement = item.quantity < item.stock_quantity;
+  const remainingCanAdd = item.stock_quantity - item.quantity;
+
   const incrementQuantity = async () => {
+    if (!canIncrement) {
+      toast.error("Stok tidak mencukupi");
+      return;
+    }
+
     const newQty = item.quantity + 1;
 
     updateQuantity(item.cart_item_id, item.variant_id, newQty);
@@ -75,9 +86,21 @@ export function CartItem({ item }: CartItemProps) {
           </h3>
 
           <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
-            {item.color && <span>Color: {item.color}</span>}
-            {item.size && <span>Size: {item.size}</span>}
-            {item.storage && <span>Stock: {item.storage}</span>}
+            {item.color && <span>Warna: {item.color}</span>}
+            {item.size && <span>Ukuran: {item.size}</span>}
+          </div>
+
+          {/* Stock info */}
+          <div className="mt-1">
+            {item.stock_quantity > 0 ? (
+              <Badge variant="secondary" className="text-xs">
+                Stok {item.stock_quantity}
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="text-xs">
+                Stok Habis
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -119,11 +142,19 @@ export function CartItem({ item }: CartItemProps) {
             variant="ghost"
             size="icon"
             onClick={incrementQuantity}
-            className="h-7 w-7 p-0"
+            disabled={!canIncrement}
+            className="h-7 w-7 p-0 disabled:opacity-50"
           >
             <Plus className="w-3 h-3" />
           </Button>
         </div>
+
+        {/* Remaining stock hint */}
+        {remainingCanAdd > 0 && remainingCanAdd <= 3 && (
+          <span className="text-[10px] text-orange-500">
+            Max +{remainingCanAdd} lagi
+          </span>
+        )}
       </div>
     </div>
   );

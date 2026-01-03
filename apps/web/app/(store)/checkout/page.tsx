@@ -153,7 +153,7 @@ export default function CheckoutPage() {
             shipment_method_id: selectedShippingId,
             coupon_code: couponCode || undefined,
           },
-          idKey
+          idKey,
         },
         {
           onSuccess: async (data) => {

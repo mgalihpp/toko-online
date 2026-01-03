@@ -6,6 +6,7 @@ export const useUsers = (params: GetUsersParams) => {
   return useQuery({
     queryKey: ["users", params],
     queryFn: () => userApi.getUsers(params),
+    refetchOnWindowFocus: false,
   });
 };
 

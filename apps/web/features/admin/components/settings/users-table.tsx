@@ -26,7 +26,7 @@ export function UsersTable() {
   const [search, setSearch] = useState("");
   const { mutate: updateRole } = useUpdateUserRole();
 
-  const { data, isLoading } = useUsers({
+  const { data, isFetching } = useUsers({
     page,
     limit: pageSize,
     search,
@@ -107,7 +107,7 @@ export function UsersTable() {
     },
   ];
 
-  if (isLoading) {
+  if (isFetching) {
     return <DataTableSkeleton columns={4} />;
   }
 

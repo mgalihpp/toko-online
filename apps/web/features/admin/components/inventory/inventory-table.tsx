@@ -371,7 +371,11 @@ export function InventoryTable() {
             columns={columns}
             data={inventory ?? []}
             searchPlaceholder="Cari SKU atau produk..."
-            searchKey="sku"
+            searchKey={[
+              "variant.sku",
+              "variant.product.title",
+              "variant.option_values",
+            ]}
           />
         </CardContent>
       </Card>

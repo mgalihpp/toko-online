@@ -166,7 +166,7 @@ export default function CartPage() {
               <Card className="p-4 sm:p-6">
                 <div className="sm:flex hidden flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                   <h2 className="text-base sm:text-lg font-semibold">
-                    Items ({totalItems()})
+                    {totalItems()} {totalItems() === 1 ? "Item" : "Items"}
                   </h2>
                   <Button
                     variant="outline"

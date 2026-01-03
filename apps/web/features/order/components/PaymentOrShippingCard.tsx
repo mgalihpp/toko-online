@@ -1,5 +1,6 @@
 import { Button } from "@repo/ui/components/button";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import type { PaymentDetail } from "@/types/midtrans";
 
 type PaymentOrShippingCardProps = {
@@ -47,7 +48,7 @@ export function PaymentOrShippingCard({
   const isFailed = displayStatus === "failed";
 
   const deliveredDate = deliveredAt
-    ? `${format(new Date(deliveredAt), "dd MMMM yyyy HH:mm")} WIB`
+    ? `${format(new Date(deliveredAt), "dd MMMM yyyy HH:mm", { locale: id })} WIB`
     : "-";
 
   if (isPending || !paymentDetail) {

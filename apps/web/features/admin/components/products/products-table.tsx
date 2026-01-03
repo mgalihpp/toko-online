@@ -107,7 +107,11 @@ export function ProductsTable() {
         const status = row.getValue("status") as string;
         return (
           <Badge variant={status === "active" ? "default" : "secondary"}>
-            {status}
+            {status === "active"
+              ? "Aktif"
+              : status === "inactive"
+                ? "Tidak Aktif"
+                : "Draf"}
           </Badge>
         );
       },

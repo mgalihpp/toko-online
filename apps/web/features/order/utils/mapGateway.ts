@@ -1,9 +1,13 @@
 import type { Orders } from "@repo/db";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import type {
   PaymentDetail,
   PaymentGatewaySuccessResponse,
 } from "@/types/midtrans";
+
+const formatDate = (date: string | Date) =>
+  `${format(new Date(date), "dd MMMM yyyy HH:mm", { locale: id })} WIB`;
 
 export const mapGatewayResponseToPaymentDetail = (
   gatewayResponse: PaymentGatewaySuccessResponse,
@@ -21,16 +25,10 @@ export const mapGatewayResponseToPaymentDetail = (
       method: `Bank Transfer ${bankName}`,
       bank: bankName,
       accountNumber: va?.va_number || gatewayResponse.permata_va_number,
-      expiryTime: `${format(
-        new Date(gatewayResponse.expiry_time),
-        "dd MMMM yyyy HH:mm",
-      )} WIB`,
+      expiryTime: formatDate(gatewayResponse.expiry_time),
       paidAt:
         gatewayResponse.settlement_time &&
-        `${format(
-          new Date(gatewayResponse.settlement_time),
-          "dd MMMM yyyy HH:mm",
-        )} WIB`,
+        formatDate(gatewayResponse.settlement_time),
     };
   }
 
@@ -47,16 +45,10 @@ export const mapGatewayResponseToPaymentDetail = (
           : paymentType === "shopeepay"
             ? "ShopeePay"
             : "QRIS",
-      expiryTime: `${format(
-        new Date(gatewayResponse.expiry_time),
-        "dd MMMM yyyy HH:mm",
-      )} WIB`,
+      expiryTime: formatDate(gatewayResponse.expiry_time),
       paidAt:
         gatewayResponse.settlement_time &&
-        `${format(
-          new Date(gatewayResponse.settlement_time),
-          "dd MMMM yyyy HH:mm",
-        )} WIB`,
+        formatDate(gatewayResponse.settlement_time),
     };
   }
 
@@ -66,17 +58,10 @@ export const mapGatewayResponseToPaymentDetail = (
       method: "Kartu Kredit",
       bank: gatewayResponse.bank?.toUpperCase(),
       maskedCard: gatewayResponse.masked_card,
-      expiryTime: `${format(
-        new Date(gatewayResponse.expiry_time),
-        "dd MMMM yyyy HH:mm",
-      )} WIB`,
-
+      expiryTime: formatDate(gatewayResponse.expiry_time),
       paidAt:
         gatewayResponse.settlement_time &&
-        `${format(
-          new Date(gatewayResponse.settlement_time),
-          "dd MMMM yyyy HH:mm",
-        )} WIB`,
+        formatDate(gatewayResponse.settlement_time),
     };
   }
 

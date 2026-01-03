@@ -8,6 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@repo/ui/components/accordion";
+import { Badge } from "@repo/ui/components/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -162,8 +163,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         Number(selectedVariant.additional_price_cents),
       size: selectedSize,
       color: selectedColor,
-      storage:
-        selectedVariant.inventory?.[0]?.stock_quantity?.toString() ?? undefined,
+      stock_quantity: availableStock,
     });
 
     toast.success("Ditambahkan ke Keranjang");
@@ -269,8 +269,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               <X className="w-4 h-4 text-red-600" />
             )}
             <span className="font-medium">
-              {inStock ? "In Stock" : "Out of Stock"}
+              {inStock ? "Tersedia" : "Stok Habis"}
             </span>
+            {inStock && (
+              <Badge variant="secondary" className="text-xs">
+                Stok {remainingStock}
+              </Badge>
+            )}
           </div>
         </div>
       </div>
@@ -448,9 +453,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
                 Number(selectedVariant.additional_price_cents),
               size: selectedSize,
               color: selectedColor,
-              storage:
-                selectedVariant.inventory?.[0]?.stock_quantity?.toString() ??
-                undefined,
+              stock_quantity: availableStock,
             });
 
             // Redirect to checkout

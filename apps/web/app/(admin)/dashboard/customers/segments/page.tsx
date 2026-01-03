@@ -135,7 +135,7 @@ export default function SegmentsPage() {
       header: "Status",
       cell: ({ row }) => (
         <Badge variant={row.original.is_active ? "default" : "secondary"}>
-          {row.original.is_active ? "Aktif" : "Nonaktif"}
+          {row.original.is_active ? "Aktif" : "Tidak Aktif"}
         </Badge>
       ),
     },
@@ -164,7 +164,7 @@ export default function SegmentsPage() {
                     onSelect={(e) => e.preventDefault()}
                     className="text-destructive focus:text-destructive"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    <Trash2 className="text-destructive w-4 h-4 mr-2" />
                     Hapus
                   </DropdownMenuItem>
                 </AlertDialogTrigger>

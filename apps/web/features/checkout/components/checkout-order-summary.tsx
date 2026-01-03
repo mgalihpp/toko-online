@@ -11,7 +11,14 @@ import {
 } from "@repo/ui/components/popover";
 import { cn } from "@repo/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, ImageIcon, Tag, Ticket } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ImageIcon,
+  Loader2,
+  Tag,
+  Ticket,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/features/admin/utils";
@@ -287,7 +294,13 @@ export function CheckoutOrderSummary({
         className="w-full mb-3"
         size="lg"
       >
-        {isProcessing ? "Memproses..." : "Tempatkan Pesanan"}
+        {isProcessing ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Memproses...
+          </>
+        ) : (
+          "Tempatkan Pesanan"
+        )}
       </Button>
     </Card>
   );
