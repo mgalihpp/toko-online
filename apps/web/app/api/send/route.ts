@@ -2,11 +2,21 @@ import { type NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { EmailTemplate } from "@/components/email/email-template";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { to, subject, text, type } = body;
+
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    console.error("RESEND_API_KEY is missing");
+    return NextResponse.json(
+      { error: "Internal Server Error: Missing Email Configuration" },
+      { status: 500 },
+    );
+  }
+
+  const resend = new Resend(apiKey);
 
   try {
     const { data, error } = await resend.emails.send({

@@ -1,12 +1,31 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "CLIENT_ORIGIN",
+    "RESEND_API_KEY",
+    "UPLOADTHING_TOKEN", 
+    "UPLOADTHING_SECRET",
+    "MIDTRANS_SANDBOX_SERVER_KEY",
+    "MIDTRANS_SANDBOX_CLIENT_KEY",
+    "MIDTRANS_PRODUCTION_SERVER_KEY",
+    "MIDTRANS_PRODUCTION_CLIENT_KEY",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "REMOVE_BG_API_KEY",
+    "SUPABASE_PASSWORD"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["DATABASE_URL"]
+      "env": []
     },
     "//#format-and-lint": {},
     "//#format-and-lint:fix": {
