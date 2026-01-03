@@ -52,19 +52,4 @@ export const auth = betterAuth({
   },
 });
 
-type Session = typeof auth.$Infer.Session;
-
-export const getSessionForMiddleware = async (req: NextRequest) => {
-  const res = await fetch(`${getBaseUrl()}/api/auth/get-session`, {
-    headers: {
-      cookie: req.headers.get("cookie") || "", // Forward the cookies from the request
-    },
-  });
-
-  const data = (await res.json()) as Session;
-
-  return {
-    session: data?.session,
-    user: data?.user,
-  };
-};
+export type Session = typeof auth.$Infer.Session;
