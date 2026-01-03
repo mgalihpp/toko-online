@@ -5,9 +5,12 @@ import "@repo/ui/admin.css";
 import "@repo/ui/globals.css";
 import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar";
 import { Toaster } from "@repo/ui/components/sonner";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { ReactQueryProvider } from "@/components/react-query";
 import { AdminSidebar } from "@/features/admin/components/app-sidebar";
 import { TopNav } from "@/features/admin/components/top-nav";
+import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "TryWear Admin Dashboard",
@@ -23,11 +26,23 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
 });
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return redirect("/login");
+  }
+
+  if (session.user.role !== "admin") {
+    return redirect("/");
+  }
+
   return (
     <html lang="en">
       <body
