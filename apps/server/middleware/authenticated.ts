@@ -21,6 +21,10 @@ export const authenticateMiddleware = asyncHandler(
       const data = await res.json();
 
       req.user = data?.user as User;
+
+      if (!req.user) {
+        throw AppError.unauthorized();
+      }
     } catch {
       throw AppError.unauthorized();
     }

@@ -9,6 +9,8 @@ export class AddressService extends BaseService<Addresses, "addresses"> {
   }
 
   findAll = async (userId: string) => {
+    if (!userId) return [];
+
     const addresses = await this.db[this.model].findMany({
       where: {
         user_id: userId,
