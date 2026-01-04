@@ -44,6 +44,8 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type z from "zod";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
+import { NotFoundAlert } from "@/features/admin/components/not-found-alert";
 import { DeleteProductDialog } from "@/features/admin/components/products/delete-product-dialog";
 import { useProductMediaUpload } from "@/features/upload/hooks/useProductMediaUpload";
 import { api } from "@/lib/api";
@@ -75,7 +77,7 @@ export default function EditProductPage() {
   } = useProductMediaUpload();
 
   // Fetch product data first
-  const { data: productData, isPending } = useQuery({
+  const { data: productData, isPending, isError } = useQuery({
     queryKey: ["product", productId],
     queryFn: () => api.product.getById(productId as string),
   });
@@ -302,6 +304,27 @@ export default function EditProductPage() {
 
   if (isPending) {
     return <EditProductSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8">
+        <ErrorAlert
+          description="Gagal memuat detail produk."
+          action={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  if (!productData) {
+    return (
+      <NotFoundAlert
+        title="Produk Tidak Ditemukan"
+        description="Produk yang Anda cari tidak dapat ditemukan."
+        backUrl="/dashboard/products"
+      />
+    );
   }
 
   return (

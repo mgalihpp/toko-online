@@ -19,6 +19,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
+import { NotFoundAlert } from "@/features/admin/components/not-found-alert";
 import { formatCurrency, formatDate } from "@/features/admin/utils";
 import { api } from "@/lib/api";
 
@@ -54,7 +56,7 @@ export default function CustomerDetailPage() {
     status: customer.status,
   });
 
-  const { data: customerData, isLoading } = useQuery({
+  const { data: customerData, isLoading, isError } = useQuery({
     queryKey: ["customer", customerId],
     queryFn: () => api.customer.getById(customerId as string),
     enabled: !!customerId,
@@ -191,6 +193,27 @@ export default function CustomerDetailPage() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-8">
+        <ErrorAlert
+          description="Gagal memuat detail pelanggan."
+          action={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  if (!customerData) {
+    return (
+      <NotFoundAlert
+        title="Pelanggan Tidak Ditemukan"
+        description="Pelanggan yang Anda cari tidak dapat ditemukan."
+        backUrl="/dashboard/customers"
+      />
     );
   }
 

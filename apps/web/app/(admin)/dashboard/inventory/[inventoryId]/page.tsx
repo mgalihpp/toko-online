@@ -54,6 +54,8 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
+import { NotFoundAlert } from "@/features/admin/components/not-found-alert";
 import { formatCurrency } from "@/features/admin/utils";
 import { api } from "@/lib/api";
 
@@ -89,7 +91,11 @@ export default function InventoryDetailPage() {
   const [thresholdValue, setThresholdValue] = useState(0);
 
   // Fetch inventory data
-  const { data: inventory, isLoading: inventoryLoading } = useQuery({
+  const {
+    data: inventory,
+    isLoading: inventoryLoading,
+    isError,
+  } = useQuery({
     queryKey: ["inventory", variantId],
     queryFn: () => api.inventory.getById(variantId),
     enabled: !!variantId,
@@ -211,16 +217,24 @@ export default function InventoryDetailPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="p-8">
+        <ErrorAlert
+          description="Gagal memuat detail inventaris."
+          action={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
   if (!inventory) {
     return (
-      <div className="p-0 md:p-8 space-y-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Inventory tidak ditemukan</p>
-          <Link href="/dashboard/inventory">
-            <Button variant="link">Kembali ke Inventory</Button>
-          </Link>
-        </div>
-      </div>
+      <NotFoundAlert
+        title="Inventaris Tidak Ditemukan"
+        description="Data inventaris yang Anda cari tidak dapat ditemukan."
+        backUrl="/dashboard/inventory"
+      />
     );
   }
 

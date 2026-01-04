@@ -3,6 +3,8 @@
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useParams } from "next/navigation";
 import { CouponForm } from "@/features/admin/components/coupons/coupon-form";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
+import { NotFoundAlert } from "@/features/admin/components/not-found-alert";
 import { useCoupon } from "@/features/admin/queries/useCouponQuery";
 
 export default function EditCouponPage() {
@@ -24,11 +26,24 @@ export default function EditCouponPage() {
     );
   }
 
-  if (isError || !coupon) {
+  if (isError) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        Kupon tidak ditemukan.
+      <div className="p-8">
+        <ErrorAlert
+          description="Gagal memuat detail kupon."
+          action={() => window.location.reload()}
+        />
       </div>
+    );
+  }
+
+  if (!coupon) {
+    return (
+      <NotFoundAlert
+        title="Kupon Tidak Ditemukan"
+        description="Kupon yang Anda cari tidak dapat ditemukan."
+        backUrl="/dashboard/coupons"
+      />
     );
   }
 

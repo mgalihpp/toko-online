@@ -26,6 +26,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ErrorAlert } from "@/features/admin/components/error-alert";
+import { NotFoundAlert } from "@/features/admin/components/not-found-alert";
 import {
   useReturn,
   useUpdateReturnStatus,
@@ -116,7 +117,7 @@ export default function ReturnDetailPage() {
     return <PageSkeleton />;
   }
 
-  if (isError || !returnData) {
+  if (isError) {
     return (
       <div className="p-8">
         <ErrorAlert
@@ -124,6 +125,16 @@ export default function ReturnDetailPage() {
           action={() => refetch()}
         />
       </div>
+    );
+  }
+
+  if (!returnData) {
+    return (
+      <NotFoundAlert
+        title="Pengembalian Tidak Ditemukan"
+        description="Data pengembalian yang Anda cari tidak dapat ditemukan."
+        backUrl="/dashboard/returns"
+      />
     );
   }
 

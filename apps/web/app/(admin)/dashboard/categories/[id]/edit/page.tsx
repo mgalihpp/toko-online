@@ -3,6 +3,8 @@
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useParams } from "next/navigation";
 import { CategoryForm } from "@/features/admin/components/categories/category-form";
+import { ErrorAlert } from "@/features/admin/components/error-alert";
+import { NotFoundAlert } from "@/features/admin/components/not-found-alert";
 import { useCategory } from "@/features/admin/queries/useCategoryQuery";
 
 export default function EditCategoryPage() {
@@ -26,14 +28,24 @@ export default function EditCategoryPage() {
     );
   }
 
-  if (isError || !category) {
+  if (isError) {
     return (
-      <div className="p-4 md:p-8 text-center bg-muted/20 rounded-lg m-8">
-        <h2 className="text-xl font-bold">Kategori tidak ditemukan</h2>
-        <p className="text-muted-foreground mt-2">
-          Pastikan ID kategori benar atau sudah tersinkronisasi.
-        </p>
+      <div className="p-8">
+        <ErrorAlert
+          description="Gagal memuat kategori."
+          action={() => window.location.reload()}
+        />
       </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <NotFoundAlert
+        title="Kategori tidak ditemukan"
+        description="Kategori yang Anda cari tidak dapat ditemukan atau telah dihapus."
+        backUrl="/dashboard/categories"
+      />
     );
   }
 
