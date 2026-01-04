@@ -90,9 +90,18 @@ export function OrdersChart() {
             <Tooltip
               formatter={(value: number) => [value, "Pesanan"]}
               contentStyle={{
-                backgroundColor: "hsl(var(--card))",
+                backgroundColor: "white",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                color: "#1f2937",
+              }}
+              labelStyle={{
+                color: "#1f2937",
+                fontWeight: 600,
+              }}
+              itemStyle={{
+                color: "#374151",
               }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
