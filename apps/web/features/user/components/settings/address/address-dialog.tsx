@@ -142,6 +142,17 @@ const AddressDialog = ({
           city: formData.city,
           postal_code: formData.postal_code,
         });
+        setFormData({
+          recipient_name: "",
+          phone: "",
+          label: "",
+          country: "Indonesia",
+          province: "",
+          is_default: false,
+          address_line1: "",
+          city: "",
+          postal_code: "",
+        });
         toast.success("Alamat berhasil ditambahkan");
       }
       onOpenChange(false);
@@ -156,7 +167,7 @@ const AddressDialog = ({
         });
         setErrors(fieldErrors);
         toast.error("Mohon lengkapi semua data dengan benar");
-      }
+      } 
     }
   };
 
