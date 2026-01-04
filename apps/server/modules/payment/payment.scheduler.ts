@@ -183,44 +183,7 @@ export class PaymentScheduler {
       if (!order) return;
 
       await db.$transaction(async (tx) => {
-        // 1. Commit reserved stock (kurangi stock_quantity, reset reserved)
-        for (const item of order.order_items) {
-          if (!item.variant_id) continue;
-
-          const inventory = await tx.inventory.findUnique({
-            where: { variant_id: item.variant_id as string },
-          });
-
-          if (!inventory) continue;
-
-          await tx.inventory.update({
-            where: { variant_id: item.variant_id as string },
-            data: {
-              stock_quantity: {
-                decrement: item.quantity,
-              },
-              reserved_quantity: {
-                decrement: item.quantity,
-              },
-            },
-          });
-
-          // Log stock movement ke AuditLogs
-          await tx.auditLogs.create({
-            data: {
-              action: "STOCK_COMMITTED",
-              object_type: "INVENTORY",
-              object_id: item.variant_id as string,
-              metadata: {
-                variant_id: item.variant_id,
-                quantity_change: -item.quantity,
-                previous_stock: inventory.stock_quantity,
-                new_stock: inventory.stock_quantity - item.quantity,
-                reason: `Order ${orderId} payment confirmed via scheduler`,
-              },
-            },
-          });
-        }
+        // 1. Commit reserved stock (deleted - stock is now deducted only on shipment)
 
         // 2. Update status order ke processing
         await tx.orders.update({

@@ -478,13 +478,25 @@ export class OrderService extends BaseService<Orders, "orders"> {
       const oldStatus = order.status;
       const newStatus = input.status;
 
-      // 2. Update status order
-      const updatedOrder = await tx.orders.update({
-        where: { id: order.id },
+      // 2. Update status order dengan Optimistic Lock (Concurrency Check)
+      // Gunakan updateMany untuk memastikan kita hanya mengupdate jika statusnya masih sama dengan yang kita baca sebelumnya
+      const { count } = await tx.orders.updateMany({
+        where: { id: order.id, status: oldStatus },
         data: {
           status: newStatus,
           updated_at: new Date(),
         },
+      });
+
+      if (count === 0) {
+        throw AppError.badRequest(
+          "Status pesanan telah berubah oleh proses lain. Silakan refresh dan coba lagi.",
+        );
+      }
+
+      // Ambil data order yang sudah terupdate
+      const updatedOrder = await tx.orders.findUniqueOrThrow({
+        where: { id: order.id },
       });
 
       // 3. Logika khusus berdasarkan transisi status
@@ -524,11 +536,14 @@ export class OrderService extends BaseService<Orders, "orders"> {
 
       // 5. === PENGURANGAN STOK VARIAN ===
       // Hanya lakukan pengurangan stok saat order berubah dari status SELAIN shipped/delivered
-      // menjadi shipped (artinya barang benar-benar dikirim)
+      // menjadi shipped/delivered (artinya barang benar-benar dikirim/diterima)
+      const isStockReducedStatus = (status: string) =>
+        ["shipped", "delivered"].includes(status);
+      const isStockPendingStatus = (status: string) =>
+        ["pending", "processing"].includes(status);
+
       const shouldDecreaseStock =
-        oldStatus !== "shipped" &&
-        oldStatus !== "delivered" &&
-        newStatus === "shipped";
+        isStockPendingStatus(oldStatus) && isStockReducedStatus(newStatus!);
 
       if (shouldDecreaseStock) {
         for (const item of order.order_items) {
@@ -603,7 +618,7 @@ export class OrderService extends BaseService<Orders, "orders"> {
       // 6. Pengembalian stok saat status menjadi cancelled / returned
       const shouldRestoreStock =
         (newStatus === "cancelled" || newStatus === "returned") &&
-        ["pending", "processing", "shipped"].includes(oldStatus);
+        ["pending", "processing", "shipped", "delivered"].includes(oldStatus);
 
       if (shouldRestoreStock) {
         for (const item of order.order_items) {
@@ -615,11 +630,11 @@ export class OrderService extends BaseService<Orders, "orders"> {
 
           if (!inventory) continue;
 
-          // Jika order sudah shipped, kembalikan stock_quantity
+          // Jika order sudah shipped/delivered, kembalikan stock_quantity
           // Jika masih pending/processing, hanya kurangi reserved_quantity
-          const wasShipped = oldStatus === "shipped";
+          const wasStockReduced = ["shipped", "delivered"].includes(oldStatus);
 
-          if (wasShipped) {
+          if (wasStockReduced) {
             // Barang sudah dikirim, kembalikan ke stok utama
             await tx.inventory.update({
               where: { variant_id: item.variant_id },
