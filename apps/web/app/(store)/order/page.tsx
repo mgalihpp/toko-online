@@ -79,7 +79,12 @@ const OrderDetails = () => {
   const shipment = orderData?.shipments?.[0];
   const shippingStatus = shipment?.status ?? "";
 
-  const statusConfig = getStatusConfig(payment?.status);
+  const effectiveStatus =
+    (payment?.status === "cancel" || payment?.status === "cancelled") &&
+    paymentData?.transaction_status === "expire"
+      ? "expire"
+      : payment?.status;
+  const statusConfig = getStatusConfig(effectiveStatus);
   const orderSteps = buildOrderSteps(
     shippingStatus,
     payment?.paid_at,
@@ -89,7 +94,9 @@ const OrderDetails = () => {
   const isPendingPayment = payment?.status === "pending";
   const isFailedPayment = payment?.status === "failed";
   const isCancelledPayment =
-    payment?.status === "cancelled" || payment?.status === "cancel";
+    payment?.status === "cancelled" ||
+    payment?.status === "cancel" ||
+    payment?.status === "expire";
   const isSettlement = payment?.status === "settlement";
   const paymentStatusCode = extractStatusCode(paymentError);
   const isPaymentNotFound = isPaymentError && paymentStatusCode === 404;
@@ -102,15 +109,16 @@ const OrderDetails = () => {
 
   // Auto cancel on gateway cancel
   useEffect(() => {
+    const status = paymentData?.transaction_status;
     if (
-      paymentData?.transaction_status === "cancel" &&
+      (status === "cancel" || status === "expire") &&
       !hasAutoCancelled &&
       !isCancelledPayment &&
       !isOrderStatusCancelled
     ) {
       runUpdatePaymentStatusAction({
         order_id: order_id as string,
-        status: "cancel",
+        status: status === "expire" ? "expire" : status,
       });
 
       runCancelOrderAction(order_id as string);

@@ -35,12 +35,13 @@ export function getStatusConfig(status?: string | null): StatusConfig {
       };
     case "cancelled":
     case "cancel":
+    case "expire":
       return {
         icon: XCircle,
         bgColor: "bg-destructive",
         textColor: "text-destructive",
-        title: "Transaksi dibatalkan",
-        message: "Transaksi Anda dibatalkan, silahkan coba lagi",
+        title: "Transaksi Kadaluarsa",
+        message: "Waktu pembayaran pesanan Anda sudah habis",
       };
     default:
       return {
