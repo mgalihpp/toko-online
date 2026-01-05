@@ -56,5 +56,5 @@ export const paymentStatusColors = {
   settlement: "bg-emerald-100 text-emerald-800",
   pending: "bg-yellow-100 text-yellow-800",
   cancelled: "bg-rose-100 text-rose-800",
-  expire: "bg-rose-100 text-rose-700",
+  expired: "bg-rose-100 text-rose-700",
 };

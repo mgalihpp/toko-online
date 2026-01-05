@@ -118,7 +118,7 @@ const OrderDetails = () => {
     ) {
       runUpdatePaymentStatusAction({
         order_id: order_id as string,
-        status: status === "expire" ? "expire" : status,
+        status: status === "expire" ? "expired" : "cancel",
       });
 
       runCancelOrderAction(order_id as string);
