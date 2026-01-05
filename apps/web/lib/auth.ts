@@ -8,6 +8,32 @@ export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          // Cari segmen default (min spend 0)
+          const defaultSegment = await db.customerSegment.findFirst({
+            where: {
+              min_spend_cents: 0,
+              is_active: true,
+            },
+            orderBy: {
+              priority: "desc",
+            },
+          });
+
+          return {
+            data: {
+              ...user,
+              segment_id: defaultSegment?.id ?? null,
+              lifetime_spent: 0,
+            },
+          };
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

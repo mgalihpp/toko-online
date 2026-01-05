@@ -405,6 +405,11 @@ const OrderDetails = () => {
             <Button asChild variant="outline" className="flex-1 h-12">
               <Link href="/products">Belanja Lagi</Link>
             </Button>
+            <Button asChild variant="secondary" className="flex-1 h-12">
+              <Link href={`/invoice/${order_id}`} target="_blank">
+                Lihat Invoice
+              </Link>
+            </Button>
           </div>
         </div>
       </main>
