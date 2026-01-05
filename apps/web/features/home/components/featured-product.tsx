@@ -135,7 +135,7 @@ export async function FeaturedProduct() {
                         className="rounded-full h-8 px-4 text-xs font-medium"
                         asChild
                       >
-                        <Link href={`/products/${product.slug}`}>
+                        <Link href={`/product/${product.slug}`}>
                           Beli
                           <ArrowRight className="ml-1 h-3 w-3" />
                         </Link>

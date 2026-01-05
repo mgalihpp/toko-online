@@ -2,10 +2,8 @@
 
 import { Button } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
-import { Heart, Search, ShoppingBag, User } from "lucide-react";
+import {  Search, } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import CartSheet from "@/features/cart/components/cart-sheet";
 import { NotificationBell } from "@/features/user/components/settings/notification/notification-bell";
 import MobileMenu from "./mobile-menu";
@@ -19,28 +17,12 @@ const navLinks = [
 ];
 
 export const Header = () => {
-  const pathname = usePathname();
-  const isLandingPage = pathname === "/";
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Only use transparent header on landing page when not scrolled
-  const isTransparent = !isLandingPage && !isScrolled;
 
   return (
     <header
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
-        isTransparent
-          ? "bg-transparent"
-          : "bg-background/95 backdrop-blur-md border-b border-border shadow-sm",
+        "bg-background/95 backdrop-blur-md border-b border-border shadow-sm",
       )}
     >
       <div className="mx-auto px-4 lg:px-8">
@@ -50,7 +32,7 @@ export const Header = () => {
             <MobileMenu />
             <Link href="/" className="hidden lg:flex items-center gap-2">
               <img
-                src={isTransparent ? "/logo.png" : "/logo-dark.png"}
+                src="/logo-dark.png"
                 alt="TryWear"
                 className="h-20 w-auto"
               />
@@ -65,9 +47,7 @@ export const Header = () => {
                 href={link.href}
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
-                  isTransparent
-                    ? "text-white/90 hover:text-white"
-                    : "text-foreground",
+                  "text-foreground",
                 )}
               >
                 {link.label}
@@ -81,10 +61,7 @@ export const Header = () => {
               variant="ghost"
               size="icon"
               className={cn(
-                "",
-                isTransparent
-                  ? "text-white hover:text-white hover:bg-white/20"
-                  : "hover:bg-accent",
+                "hover:bg-accent",
               )}
               asChild
             >
@@ -94,19 +71,15 @@ export const Header = () => {
             </Button>
             <div
               className={cn(
-                isTransparent
-                  ? "[&_button]:text-white [&_button]:hover:text-white [&_button]:hover:bg-white/20"
-                  : "",
+                "",
               )}
             >
               <NotificationBell />
             </div>
-            <UserMenu isTransparent={isTransparent} />
+            <UserMenu />
             <div
               className={cn(
-                isTransparent
-                  ? "[&_button]:text-white [&_button]:hover:text-white [&_button]:hover:bg-white/20"
-                  : "",
+                "",
               )}
             >
               <CartSheet />

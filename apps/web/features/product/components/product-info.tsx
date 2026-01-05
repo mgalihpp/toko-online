@@ -35,7 +35,6 @@ import { WishlistButton } from "@/features/wishlist/components/WishlistButton";
 import { useServerAction } from "@/hooks/useServerAction";
 import type { ProductWithRelations } from "@/types/index";
 import SizeGuideDialog from "./size-guide-dialog";
-import VirtualTryOnDialog from "./virtual-try-on-dialog";
 
 type ProductInfoProps = {
   product: ProductWithRelations;
@@ -69,7 +68,6 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   );
   const [quantity, setQuantity] = useState(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
-  const [tryOnOpen, setTryOnOpen] = useState(false);
   const [runAddItemToCartAction, isAddItemToCartPending] =
     useServerAction(addItemToCart);
 
@@ -390,7 +388,13 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         size="lg"
         variant="secondary"
         className="w-full h-12 text-base font-medium gap-2"
-        onClick={() => setTryOnOpen(true)}
+        onClick={() => {
+          const imageUrl = encodeURIComponent(
+            product.product_images?.[0]?.url || ""
+          );
+          const productTitle = encodeURIComponent(product.title);
+          router.push(`/try-on?image=${imageUrl}&name=${productTitle}`);
+        }}
       >
         <Camera className="w-5 h-5" />
         Coba Virtual Try-On
@@ -516,12 +520,6 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       </Accordion>
 
       <SizeGuideDialog open={sizeGuideOpen} onOpenChange={setSizeGuideOpen} />
-      <VirtualTryOnDialog
-        open={tryOnOpen}
-        onOpenChange={setTryOnOpen}
-        productImage={product.product_images?.[0]?.url}
-        productName={product.title}
-      />
     </div>
   );
 };
