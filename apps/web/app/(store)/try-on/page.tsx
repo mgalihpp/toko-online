@@ -99,7 +99,7 @@ export default function VirtualTryOnPage() {
       setImageLoaded(false);
 
       try {
-        const response = await axios.post("/products/remove-b", {
+        const response = await axios.post("/products/remove-bg", {
           imageUrl: currentImage,
         });
 
