@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
+import axios from "axios";
 import {
   AlertCircle,
   ArrowRight,
@@ -12,16 +13,14 @@ import {
   RotateCcw,
   Sparkles,
   SwitchCamera,
-  Upload,
   Wand2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
 import Webcam from "react-webcam";
 
 // Direct API instance to bypass Next.js proxy timeout for long-running AI requests
 const directApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_API_URL || "http://localhost:5000/api/v1",
+  baseURL: '/api/v1',
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -67,11 +66,11 @@ export default function AiTryOnMode({
   const [generatedResult, setGeneratedResult] =
     useState<GenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Camera state
   const [cameraReady, setCameraReady] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-  
+
   // Loading progress state
   const [currentStep, setCurrentStep] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -90,9 +89,9 @@ export default function AiTryOnMode({
     }, 1000);
 
     // Progress through loading steps
-    let stepTimeouts: NodeJS.Timeout[] = [];
+    const stepTimeouts: NodeJS.Timeout[] = [];
     let cumulativeTime = 0;
-    
+
     LOADING_STEPS.forEach((step, index) => {
       const timeout = setTimeout(() => {
         setCurrentStep(index + 1);
@@ -186,7 +185,7 @@ export default function AiTryOnMode({
   // Capture photo from camera
   const handleCapturePhoto = useCallback(() => {
     if (!webcamRef.current) return;
-    
+
     const imageSrc = webcamRef.current.getScreenshot();
     if (imageSrc) {
       setUploadedImage(imageSrc);
@@ -334,11 +333,14 @@ export default function AiTryOnMode({
                 </div>
               </div>
             </div>
-            
+
             {/* Product name badge */}
             <div className="flex justify-center mt-4">
               <div className="px-4 py-2 bg-background/80 backdrop-blur-sm rounded-full text-sm text-muted-foreground border shadow-sm">
-                <span className="font-medium text-foreground">{generatedResult.productName}</span> - Virtual Try-On dengan AI
+                <span className="font-medium text-foreground">
+                  {generatedResult.productName}
+                </span>{" "}
+                - Virtual Try-On dengan AI
               </div>
             </div>
           </div>
@@ -403,34 +405,41 @@ export default function AiTryOnMode({
 
                   {/* Progress steps */}
                   <div className="w-full space-y-3">
-                    {LOADING_STEPS.slice(0, Math.max(currentStep + 1, 1)).map((step, index) => (
-                      <div
-                        key={step.id}
-                        className={`flex items-center gap-3 transition-all duration-300 ${
-                          index < currentStep
-                            ? "text-muted-foreground"
-                            : index === currentStep
-                            ? "text-primary font-medium"
-                            : "text-muted-foreground/50"
-                        }`}
-                      >
-                        {index < currentStep ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                        ) : index === currentStep ? (
-                          <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full border-2 border-current shrink-0" />
-                        )}
-                        <span className="text-sm">{step.text}</span>
-                      </div>
-                    ))}
+                    {LOADING_STEPS.slice(0, Math.max(currentStep + 1, 1)).map(
+                      (step, index) => (
+                        <div
+                          key={step.id}
+                          className={`flex items-center gap-3 transition-all duration-300 ${
+                            index < currentStep
+                              ? "text-muted-foreground"
+                              : index === currentStep
+                                ? "text-primary font-medium"
+                                : "text-muted-foreground/50"
+                          }`}
+                        >
+                          {index < currentStep ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                          ) : index === currentStep ? (
+                            <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-current shrink-0" />
+                          )}
+                          <span className="text-sm">{step.text}</span>
+                        </div>
+                      ),
+                    )}
                   </div>
 
                   {/* Timer and message */}
                   <div className="text-center space-y-2 pt-2 border-t w-full">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Waktu berlalu: <span className="font-mono font-medium text-foreground">{formatTime(elapsedTime)}</span></span>
+                      <span>
+                        Waktu berlalu:{" "}
+                        <span className="font-mono font-medium text-foreground">
+                          {formatTime(elapsedTime)}
+                        </span>
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Proses biasanya membutuhkan 30-60 detik
@@ -454,13 +463,15 @@ export default function AiTryOnMode({
                 }}
                 onUserMedia={() => setCameraReady(true)}
                 onUserMediaError={() => {
-                  setError("Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.");
+                  setError(
+                    "Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.",
+                  );
                   setInputMode("upload");
                 }}
                 className="w-full h-full object-cover"
                 mirrored={facingMode === "user"}
               />
-              
+
               {/* Camera loading */}
               {!cameraReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80">
@@ -508,8 +519,12 @@ export default function AiTryOnMode({
                   className="w-12 h-12 object-cover rounded"
                 />
                 <div>
-                  <p className="text-xs text-muted-foreground">Pakaian yang akan dicoba:</p>
-                  <p className="text-sm font-medium truncate max-w-[200px]">{productName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pakaian yang akan dicoba:
+                  </p>
+                  <p className="text-sm font-medium truncate max-w-[200px]">
+                    {productName}
+                  </p>
                 </div>
               </div>
             )}
@@ -571,8 +586,12 @@ export default function AiTryOnMode({
                   className="w-12 h-12 object-cover rounded"
                 />
                 <div>
-                  <p className="text-xs text-muted-foreground">Pakaian yang akan dicoba:</p>
-                  <p className="text-sm font-medium truncate max-w-[200px]">{productName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pakaian yang akan dicoba:
+                  </p>
+                  <p className="text-sm font-medium truncate max-w-[200px]">
+                    {productName}
+                  </p>
                 </div>
               </div>
             )}
@@ -584,10 +603,14 @@ export default function AiTryOnMode({
       <div className="p-4 flex items-center justify-between gap-4 border-t">
         <div className="flex items-center gap-2">
           {(uploadedImage || generatedResult || inputMode === "camera") && (
-            <Button variant="outline" size="sm" onClick={() => {
-              handleReset();
-              setInputMode("upload");
-            }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                handleReset();
+                setInputMode("upload");
+              }}
+            >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset
             </Button>
